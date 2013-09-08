@@ -31,9 +31,11 @@ can_be_used_by_providing_handlers_for_both_cases)
     std::vector<int> in{1,4,6,2,10,55};
     std::vector<int> expected{-1,16,24,-1,-1,-1};
     for(size_t i=0;i<in.size();i++){
-        auto r = twice_in_range(3,7,in[i]).use(
-            [](int v)->int {return 2*v;},
-            []()->int {return -1;}
+        auto result = twice_in_range(3,7,in[i]);
+        typedef decltype(result)::Type T;
+        auto r = result.use(
+            [](T v)->T {return 2*v;},
+            []()->T {return -1;}
         );
         EXPECT_EQ(expected[i],r);
     }

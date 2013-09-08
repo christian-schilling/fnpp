@@ -1,8 +1,8 @@
-template<typename _T>
+template<typename T>
 class Optional
 {
 public:
-    typedef _T T;
+    typedef T Type;
     Optional(Optional const&) = delete;
     inline Optional(Optional const&& original):
         value(original.value),
