@@ -34,11 +34,24 @@ can_be_used_by_providing_handlers_for_both_cases)
         auto result = twice_in_range(3,7,in[i]);
         typedef decltype(result)::Type T;
         auto r = result.use(
-            [](T v)->T {return 2*v;},
-            []()->T {return -1;}
+            [](T v) {return 2*v;},
+            []() {return -1;}
         );
         EXPECT_EQ(expected[i],r);
     }
+}
+
+void take(Optional<int> const& i)
+{
+    EXPECT_EQ(12,i.default_to(0));
+}
+
+TEST(An_optional_value,
+can_be_passed_into_a_function)
+{
+    auto r = twice_in_range(3,9,6);
+    take(r);
+    EXPECT_EQ(12,r.default_to(0));
 }
 
 int main(int argc, char **argv) {
