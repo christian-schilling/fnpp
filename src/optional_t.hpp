@@ -14,7 +14,7 @@ public:
     inline T const& default_to(T const& fallback) const
     {
         return use(
-            [&](T const& v)->T const& {return v;},
+            [](T const& v)->T const& {return v;},
             [&]()->T const& {return fallback;}
         );
     }
