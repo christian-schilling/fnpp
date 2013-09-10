@@ -10,6 +10,10 @@ struct noconst<B const&>{ typedef B T; };
 template<typename T>
 struct IsTrue{ bool operator()(T i)const {return static_cast<bool>(i);} };
 
+template<typename T>
+constexpr bool is_void() {return false;}
+template<>
+constexpr bool is_void<void>() {return true;}
 
 template<typename T>
 class Range
@@ -138,6 +142,10 @@ public:
     inline optional const& use(
         ValueF const& handle_value) const
     {
+        static_assert(_::is_void<
+            decltype(handle_value(const_cast<T const&>(value)))>() == true,
+            "this function must not have a return value"
+        );
         if(has_value) {handle_value(const_cast<T const&>(value));}
         return *this;
     }
