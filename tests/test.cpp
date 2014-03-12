@@ -112,6 +112,19 @@ can_be_used_by_providing_handlers_for_both_cases)
     }
 }
 
+TEST(An_optional_value,
+can_be_converted_to_bool_to_test_if_it_has_a_value)
+{
+    auto t = optional<int>{1};
+    EXPECT_TRUE(t);
+
+    auto t0 = optional<int>{0};
+    EXPECT_TRUE(t0);
+
+    auto f = optional<int>{};
+    EXPECT_FALSE(f);
+}
+
 void take(optional<int> const& i)
 {
     EXPECT_EQ(12,i or 0);

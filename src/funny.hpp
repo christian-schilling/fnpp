@@ -164,8 +164,10 @@ public:
                   : handle_no_value();
     }
 
-    bool const has_value;
+    operator bool() const& { return has_value; };
+
 private:
+    bool const has_value;
     T value;
 };
 
