@@ -1,3 +1,6 @@
+#ifndef _1af7690b_7fca_4464_9e14_c71bc5a29ee9
+#define _1af7690b_7fca_4464_9e14_c71bc5a29ee9
+
 namespace funny{
 
 namespace _ {
@@ -22,7 +25,7 @@ class Range
     {
     public:
         IT(T const& position): position(position) {}
-        IT(T const& position, T const& step): IT(position),step(step) {}
+        IT(T const& position, T const& step): position(position),step(step) {}
         bool operator!=(IT const& other)const {return position!=other.position;}
         IT const& operator++() {position+=step;return *this;}
         T const& operator*()const {return position;}
@@ -167,3 +170,5 @@ private:
 };
 
 };
+
+#endif
