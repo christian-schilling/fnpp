@@ -1,6 +1,7 @@
 #include "funny.hpp"
 #include <stdio.h>
 #include <vector>
+#include <utility>
 #include <gtest/gtest.h>
 
 using namespace funny;
@@ -91,7 +92,7 @@ void iterate(G const& g, FN const& fn)
 }
 
 TEST(The_filter_function,
-iiican_take_an_std_vector_as_input)
+can_take_an_std_vector_as_input_and_then_be_passed_into_map)
 {
     std::vector<int> input{23,6,0,8,0,12,4,10,0};
     auto half = [](int x){return x/2;};
@@ -104,8 +105,38 @@ iiican_take_an_std_vector_as_input)
 }
 
 
+TEST(The_zip_function,
+allows_parallel_iteration_over_two_iterators)
+{
+    std::vector<int> input{23,6,0,8,0,12,4,10,0};
 
+    int count = 0;
+    for(auto const& item : zip(input,range(input.size()*2))){
+        EXPECT_EQ(input[item.second],item.first);
+        count++;
+    }
+    EXPECT_EQ(count,input.size());
 
+    count = 0;
+    for(auto const& item : zip(range(input.size()*2),input)){
+        EXPECT_EQ(input[item.first],item.second);
+        count++;
+    }
+    EXPECT_EQ(count,input.size());
+}
+
+TEST(The_enumerate_function,
+allows_iteration_with_an_index)
+{
+    std::vector<int> input{23,6,0,8,0,12,4,10,0};
+
+    int count = 0;
+    for(auto const& i : enumerate(input)){
+        EXPECT_EQ(input[i.nr],i.item);
+        count++;
+    }
+    EXPECT_EQ(count,input.size());
+}
 
 
 optional<int> twice_in_range(int from, int to, int i)

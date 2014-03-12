@@ -79,6 +79,85 @@ auto map(FN const& fn,G const& g) -> _::Map<FN,G,
 }
 
 namespace _ {
+template<
+    template<typename,typename> class PairT,
+    typename A,
+    typename B,
+    typename OtherIT1,
+    typename OtherIT2
+>
+class Zip
+{
+    class IT
+    {
+    private:
+        OtherIT1 other_it1;
+        OtherIT2 other_it2;
+        typedef PairT<decltype(*other_it1),decltype(*other_it2)> Pair;
+
+    public:
+        IT(OtherIT1 other_it1,OtherIT2 other_it2):
+            other_it1(other_it1),other_it2(other_it2) {}
+        bool operator!=(IT& other){
+            return (
+                (other_it1!=other.other_it1) && (other_it2 != other.other_it2)
+            );
+        }
+        IT const& operator++() {++other_it1;++other_it2;return *this;}
+        auto operator*()const -> decltype(Pair{*other_it1,*other_it2}) {
+            return Pair{*other_it1,*other_it2};
+        }
+    };
+
+    IT const from;
+    IT const to;
+
+public:
+    Zip(A const& a, B const& b):
+        from(a.begin(),b.begin()), to(a.end(),b.end()) {}
+    IT const& begin() const { return from; }
+    IT const& end() const { return to; }
+};};
+
+namespace _ {
+template<typename A, typename B>
+struct Pair
+{
+    Pair(A const& a, B const& b):
+        first(a),second(b),
+        key(a),value(b),
+        nr(a),item(b)
+    {}
+
+    A const& first;
+    B const& second;
+
+    A const& key;
+    B const& value;
+
+    A const& nr;
+    B const& item;
+};};
+
+template<template<typename,typename> class PairT=_::Pair, typename A,typename B>
+auto zip(A const& a,B const& b) -> _::Zip<PairT,A,B,
+        typename _::noconst<decltype(a.begin())>::T,
+        typename _::noconst<decltype(b.begin())>::T
+    >{
+    return _::Zip<PairT,A,B,
+        typename _::noconst<decltype(a.begin())>::T,
+        typename _::noconst<decltype(b.begin())>::T
+    >(a,b);
+}
+
+template<typename A>
+auto enumerate(A const& a)
+     ->decltype(zip(range(-1),a))
+{
+    return zip(range(-1),a);
+}
+
+namespace _ {
 template<typename FN,typename G, typename OtherIT>
 class Filter
 {
@@ -119,6 +198,7 @@ auto filter(G const& g)
 {
     return filter(_::IsTrue<decltype(*g.begin())>{},g);
 }
+
 
 template<typename T>
 class optional
