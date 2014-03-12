@@ -58,7 +58,7 @@ class Map
         OtherIT other_it;
     public:
         IT(FN fn,OtherIT other_it): fn(fn), other_it(other_it) {}
-        bool operator!=(IT const& other)const {return other_it!=other.other_it;}
+        bool operator!=(IT& other){return other_it!=other.other_it;}
         IT const& operator++() {++other_it;return *this;}
         auto operator*()const -> decltype(fn(*other_it)) {return fn(*other_it);}
     };
@@ -89,7 +89,7 @@ class Filter
         OtherIT other_it;
     public:
         IT(FN fn,OtherIT other_it): fn(fn), other_it(other_it){}
-        bool operator!=(IT const& other){
+        bool operator!=(IT& other){
             while(!fn(*other_it) and other_it!=other.other_it){ ++other_it; }
             return other_it!=other.other_it;
         }

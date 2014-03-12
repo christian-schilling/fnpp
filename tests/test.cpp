@@ -51,11 +51,62 @@ defaults_to_a_functor_thats_tests_the_truth_value_of_the_elements_themselves)
     auto even = [](int x){return x%2 == 0;};
     auto count = 0;
     for(auto i: filter(map(even,range(10)))){
-        EXPECT_EQ(expected[count],1) << i;
+        EXPECT_EQ(expected[count],i) << i;
         count++;
     }
     EXPECT_EQ(5,count);
 }
+
+TEST(The_map_function,
+can_take_the_result_of_the_filter_function_as_input)
+{
+    std::vector<int> expected{2,4,6,8,10,12,14,16,18};
+    auto twice = [](int x){return 2*x;};
+    auto count = 0;
+    for(auto i: map(twice,filter(range(10)))){
+        EXPECT_EQ(expected[count],i) << i;
+        count++;
+    }
+    EXPECT_EQ(9,count);
+}
+
+TEST(The_filter_function,
+can_take_an_std_vector_as_input)
+{
+    std::vector<int> input{23,6,0,8,0,12,4,10,0};
+    std::vector<int> expected{11,3,4,6,2,5};
+    auto half = [](int x){return x/2;};
+    auto count = 0;
+    for(auto i: map(half,filter(input))){
+        EXPECT_EQ(expected[count],i) << i;
+        count++;
+    }
+    EXPECT_EQ(6,count);
+}
+
+template<typename G,typename FN>
+void iterate(G const& g, FN const& fn)
+{
+    for(auto const& x: g){ fn(x); }
+}
+
+TEST(The_filter_function,
+iiican_take_an_std_vector_as_input)
+{
+    std::vector<int> input{23,6,0,8,0,12,4,10,0};
+    auto half = [](int x){return x/2;};
+
+    std::vector<int> v;
+    iterate(map(half,filter(input)),[&](int x){
+        v.push_back(x);
+    });
+    EXPECT_EQ(6,v.size());
+}
+
+
+
+
+
 
 optional<int> twice_in_range(int from, int to, int i)
 {
