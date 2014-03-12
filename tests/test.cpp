@@ -170,7 +170,7 @@ keeps_beeing_optional_if_only_the_exists_case_is_handled)
     for(size_t i=0;i<in.size();i++){
         int out = 0;
         optional<int> const& result = twice_in_range(3,7,in[i]);
-        optional<int> const& still_optional = result.use([&](int v){out=v*3;});
+        optional<int> const& still_optional = result([&](int v){out=v*3;});
         auto r = still_optional or -1;
         EXPECT_EQ(expected[i],r);
         EXPECT_EQ(expected2[i],out);
@@ -186,7 +186,7 @@ can_be_used_by_providing_handlers_for_both_cases)
     for(size_t i=0;i<in.size();i++){
         auto result = twice_in_range(3,7,in[i]);
         typedef decltype(result)::Type T;
-        auto r = result.use(
+        auto r = result(
             [](T v){return 2*v;},
             [](){return -1;}
         );

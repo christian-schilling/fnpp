@@ -215,14 +215,14 @@ public:
 
     inline T const& operator||(T const& fallback) const
     {
-        return use(
+        return (*this)(
             [](T const& v)->T const& {return v;},
             [&]()->T const& {return fallback;}
         );
     }
 
     template<typename ValueF>
-    inline optional const& use(
+    inline optional const& operator()(
         ValueF const& handle_value) const
     {
         static_assert(_::is_void<
@@ -234,7 +234,7 @@ public:
     }
 
     template<typename ValueF, typename EmptyF>
-    inline auto use(
+    inline auto operator()(
         ValueF const& handle_value,
         EmptyF const& handle_no_value) const
         ->decltype(handle_value(*reinterpret_cast<T*>(0)))
