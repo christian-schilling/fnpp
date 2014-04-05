@@ -1,10 +1,10 @@
-#include "funny.hpp"
+#include "fn++.hpp"
 #include <stdio.h>
 #include <vector>
 #include <utility>
 #include <gtest/gtest.h>
 
-using namespace funny;
+using namespace fn;
 
 TEST(A_range,
 goes_from_zero_to_the_upper_limit_not_including_the_limit)

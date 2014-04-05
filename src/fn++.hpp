@@ -1,7 +1,7 @@
 #ifndef _1af7690b_7fca_4464_9e14_c71bc5a29ee9
 #define _1af7690b_7fca_4464_9e14_c71bc5a29ee9
 
-namespace funny{
+namespace fn{
 
 namespace _ {
 
