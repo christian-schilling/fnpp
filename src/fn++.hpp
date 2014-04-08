@@ -244,7 +244,7 @@ public:
                   : handle_no_value();
     }
 
-    operator bool() const& { return has_value; };
+    explicit operator bool() const& { return has_value; };
 
 private:
     bool const has_value;
