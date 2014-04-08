@@ -198,13 +198,13 @@ TEST(An_optional_value,
 can_be_converted_to_bool_to_test_if_it_has_a_value)
 {
     auto t = optional<int>{1};
-    EXPECT_TRUE(t);
+    EXPECT_TRUE(bool(t));
 
     auto t0 = optional<int>{0};
-    EXPECT_TRUE(t0);
+    EXPECT_TRUE(bool(t0));
 
     auto f = optional<int>{};
-    EXPECT_FALSE(f);
+    EXPECT_FALSE(bool(f));
 }
 
 void take(optional<int> const& i)
