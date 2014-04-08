@@ -123,20 +123,20 @@ namespace _ {
 template<typename A, typename B>
 struct Pair
 {
-    Pair(A const& a, B const& b):
+    Pair(A&& a, B&& b):
         first(a),second(b),
         key(a),value(b),
         nr(a),item(b)
     {}
 
-    A const& first;
-    B const& second;
+    A&& first;
+    B&& second;
 
-    A const& key;
-    B const& value;
+    A&& key;
+    B&& value;
 
-    A const& nr;
-    B const& item;
+    A&& nr;
+    B&& item;
 };};
 
 template<template<typename,typename> class PairT=_::Pair, typename A,typename B>
