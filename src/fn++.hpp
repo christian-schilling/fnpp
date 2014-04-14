@@ -218,12 +218,20 @@ class optional
 {
 public:
     typedef T Type;
-    optional(optional const&) = delete;
+
+    inline optional(optional const& original):
+        has_value(original.has_value),
+        value(original.value){}
+
     inline optional(optional const&& original):
         has_value(original.has_value),
         value(original.value){}
 
-    inline optional(): has_value(false){}
+    inline optional():
+        has_value(false),
+        value(value)
+    {}
+
     inline optional(T const& value): has_value(true), value(value){}
 
     inline T const& operator||(T const& fallback) const
@@ -252,7 +260,7 @@ public:
     inline auto operator()(
         ValueF const& handle_value,
         EmptyF const& handle_no_value) const
-        ->decltype(handle_value(*reinterpret_cast<T*>(0)))
+        ->decltype(handle_no_value())
     {
         return has_value ?
                     handle_value(const_cast<T const&>(value))
