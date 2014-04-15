@@ -195,16 +195,16 @@ can_be_used_by_providing_handlers_for_both_cases)
 }
 
 TEST(An_optional_value,
-can_be_converted_to_bool_to_test_if_it_has_a_value)
+can_be_tested_if_it_has_a_value)
 {
     auto t = optional<int>{1};
-    EXPECT_TRUE(bool(t));
+    EXPECT_TRUE(t.has_value);
 
     auto t0 = optional<int>{0};
-    EXPECT_TRUE(bool(t0));
+    EXPECT_TRUE(t0.has_value);
 
     auto f = optional<int>{};
-    EXPECT_FALSE(bool(f));
+    EXPECT_FALSE(f.has_value);
 }
 
 void take(optional<int> const& i)

@@ -229,7 +229,7 @@ public:
 
     inline optional():
         has_value(false),
-        value(value)
+        value(*&value)
     {}
 
     inline optional(T const& value): has_value(true), value(value){}
@@ -267,10 +267,9 @@ public:
                   : handle_no_value();
     }
 
-    explicit operator bool() const { return has_value; };
+    bool const has_value;
 
 private:
-    bool const has_value;
     T value;
 };
 
