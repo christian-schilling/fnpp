@@ -13,10 +13,14 @@ struct noconst<B const&>{ typedef B T; };
 template<typename T>
 struct IsTrue{ bool operator()(T i)const {return static_cast<bool>(i);} };
 
+#ifndef _MSC_VER
 template<typename T>
 constexpr bool is_void() {return false;}
 template<>
 constexpr bool is_void<void>() {return true;}
+#else
+#define or ||
+#endif
 
 template<typename T>
 class Range
@@ -24,6 +28,7 @@ class Range
     class IT
     {
     public:
+        typedef T value_type;
         IT(T const& position): position(position) {}
         IT(T const& position, T const& step): position(position),step(step) {}
         bool operator!=(IT const& other)const {return position!=other.position;}
@@ -57,10 +62,11 @@ class Map
         FN const& fn;
         OtherIT other_it;
     public:
+        typedef decltype(fn(*other_it)) value_type;
         IT(FN fn,OtherIT other_it): fn(fn), other_it(other_it) {}
         bool operator!=(IT& other){return other_it!=other.other_it;}
         IT const& operator++() {++other_it;return *this;}
-        auto operator*()const -> decltype(fn(*other_it)) {return fn(*other_it);}
+        auto operator*()const -> value_type {return fn(*other_it);}
     };
 
     IT const from;
@@ -93,9 +99,13 @@ class Zip
     private:
         OtherIT1 other_it1;
         OtherIT2 other_it2;
-        typedef PairT<decltype(*other_it1),decltype(*other_it2)> Pair;
+        typedef typename OtherIT1::value_type const OtherVal1;
+        typedef typename OtherIT2::value_type const OtherVal2;
+        typedef PairT<OtherVal1,OtherVal2> Pair;
 
     public:
+        typedef Pair value_type;
+
         IT(OtherIT1 other_it1,OtherIT2 other_it2):
             other_it1(other_it1),other_it2(other_it2) {}
         bool operator!=(IT& other){
@@ -104,8 +114,9 @@ class Zip
             );
         }
         IT const& operator++() {++other_it1;++other_it2;return *this;}
-        auto operator*()const -> decltype(Pair{*other_it1,*other_it2}) {
-            return Pair{*other_it1,*other_it2};
+
+        Pair operator*() {
+            return Pair(*other_it1,*other_it2);
         }
     };
 
@@ -123,20 +134,20 @@ namespace _ {
 template<typename A, typename B>
 struct Pair
 {
-    Pair(A&& a, B&& b):
+    Pair(A& a, B& b):
         first(a),second(b),
         key(a),value(b),
         nr(a),item(b)
     {}
 
-    A&& first;
-    B&& second;
+    A& first;
+    B& second;
 
-    A&& key;
-    B&& value;
+    A& key;
+    B& value;
 
-    A&& nr;
-    B&& item;
+    A& nr;
+    B& item;
 };};
 
 template<template<typename,typename> class PairT=_::Pair, typename A,typename B>
@@ -167,6 +178,8 @@ class Filter
         FN const& fn;
         OtherIT other_it;
     public:
+        typedef typename OtherIT::value_type value_type;
+
         IT(FN fn,OtherIT other_it): fn(fn), other_it(other_it){}
         bool operator!=(IT& other){
             while(other_it!=other.other_it && !fn(*other_it)){ ++other_it; }
@@ -205,12 +218,20 @@ class optional
 {
 public:
     typedef T Type;
-    optional(optional const&) = delete;
+
+    inline optional(optional const& original):
+        has_value(original.has_value),
+        value(original.value){}
+
     inline optional(optional const&& original):
         has_value(original.has_value),
         value(original.value){}
 
-    inline optional(): has_value(false){}
+    inline optional():
+        has_value(false),
+        value(value)
+    {}
+
     inline optional(T const& value): has_value(true), value(value){}
 
     inline T const& operator||(T const& fallback) const
@@ -225,10 +246,12 @@ public:
     inline optional const& operator()(
         ValueF const& handle_value) const
     {
+#ifndef _MSC_VER
         static_assert(_::is_void<
             decltype(handle_value(const_cast<T const&>(value)))>() == true,
             "this function must not have a return value"
         );
+#endif
         if(has_value) {handle_value(const_cast<T const&>(value));}
         return *this;
     }
@@ -237,14 +260,14 @@ public:
     inline auto operator()(
         ValueF const& handle_value,
         EmptyF const& handle_no_value) const
-        ->decltype(handle_value(*reinterpret_cast<T*>(0)))
+        ->decltype(handle_no_value())
     {
         return has_value ?
                     handle_value(const_cast<T const&>(value))
                   : handle_no_value();
     }
 
-    explicit operator bool() const& { return has_value; };
+    explicit operator bool() const { return has_value; };
 
 private:
     bool const has_value;
