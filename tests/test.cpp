@@ -220,6 +220,48 @@ can_be_passed_into_a_function)
     EXPECT_EQ(12,r or 0);
 }
 
+optional<int> getnr(int nr)
+{
+    if(nr % 2){
+        return {};
+    }
+    else{
+        return nr;
+    }
+}
+
+TEST(An_optional_value,
+can_be_accessed_easyier_using_macros)
+{
+    for(auto const i: range(5)){
+        int out;
+        auto nr = getnr(i);
+
+        out = -2;
+        with_(nr,{
+            out = nr;
+        });
+        if(!(i%2)){ EXPECT_EQ(i,out); }
+        else{ EXPECT_EQ(-2,out); }
+
+        out = -2;
+        without_(nr,{
+            out = -1;
+        });
+        if(!(i%2)){ EXPECT_EQ(-2,out); }
+        else{ EXPECT_EQ(-1,out); }
+
+        out = -2;
+        with_(getnr(i),nr,{
+            out = nr;
+        },{
+            out = -1;
+        });
+        if(!(i%2)){ EXPECT_EQ(i,out); }
+        else{ EXPECT_EQ(-1,out); }
+    }
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
