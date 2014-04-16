@@ -229,7 +229,7 @@ public:
 
     inline optional():
         has_value(false),
-        value(value)
+        value(*&value)
     {}
 
     inline optional(T const& value): has_value(true), value(value){}
