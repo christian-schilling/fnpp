@@ -162,6 +162,24 @@ can_be_defaulted_to_a_constant)
 }
 
 TEST(An_optional_value,
+can_change_if_it_is_a_reference)
+{
+    int i = 5;
+    int j = 7;
+    optional<int&> o = i;
+
+    auto& r = o or j;
+
+    EXPECT_EQ(5,r);
+    r = 6;
+    EXPECT_EQ(6,i);
+
+    with_(o,{ o = 9; });
+
+    EXPECT_EQ(9,i);
+}
+
+TEST(An_optional_value,
 keeps_beeing_optional_if_only_the_exists_case_is_handled)
 {
     std::vector<int> in{1,4,6,2,10,55};
@@ -231,7 +249,7 @@ optional<int> getnr(int nr)
 }
 
 TEST(An_optional_value,
-can_be_accessed_easyier_using_macros)
+can_be_accessed_easier_using_macros)
 {
     for(auto const i: range(5)){
         int out;

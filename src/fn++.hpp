@@ -234,11 +234,11 @@ public:
 
     inline optional(T const& value): has_value(true), value(value){}
 
-    inline T const& operator||(T const& fallback) const
+    inline T operator||(T fallback) const
     {
         return (*this)(
-            [](T const& v)->T const& {return v;},
-            [&]()->T const& {return fallback;}
+            [](T& v)->T{return v;},
+            [&]()->T{return fallback;}
         );
     }
 
@@ -248,11 +248,11 @@ public:
     {
 #ifndef _MSC_VER
         static_assert(_::is_void<
-            decltype(handle_value(const_cast<T const&>(value)))>() == true,
+            decltype(handle_value(const_cast<T&>(value)))>() == true,
             "this function must not have a return value"
         );
 #endif
-        if(has_value) {handle_value(const_cast<T const&>(value));}
+        if(has_value) {handle_value(const_cast<T&>(value));}
         return *this;
     }
 
@@ -263,7 +263,7 @@ public:
         ->decltype(handle_no_value())
     {
         return has_value ?
-                    handle_value(const_cast<T const&>(value))
+                    handle_value(const_cast<T&>(value))
                   : handle_no_value();
     }
 
@@ -276,11 +276,11 @@ private:
 };
 
 #define FN_OPTIONAL_T_WITH(_1,_2,_3,_4,NAME,...) NAME
-#define FN_OPTIONAL_T_WITH2(X,DO) X([&](decltype(X)::Type const& X) DO);
-#define FN_OPTIONAL_T_WITH3(F,X,DO) F([&](decltype(F)::Type const& X) DO);
-#define FN_OPTIONAL_T_WITH4(F,X,DO,WO) F([&](decltype(F)::Type const& X) DO,[&]WO);
+#define FN_OPTIONAL_T_WITH2(X,DO) X([&](typename decltype(X)::Type& X) DO);
+#define FN_OPTIONAL_T_WITH3(F,X,DO) F([&](typename decltype(F)::Type& X) DO);
+#define FN_OPTIONAL_T_WITH4(F,X,DO,WO) F([&](typename decltype(F)::Type& X) DO,[&]()WO);
 #define with_(...) FN_OPTIONAL_T_WITH(__VA_ARGS__,\
     FN_OPTIONAL_T_WITH4, FN_OPTIONAL_T_WITH3, FN_OPTIONAL_T_WITH2)(__VA_ARGS__)
-#define without_(X,DO) X([&](decltype(X)::Type const&) {},[&]() DO);
+#define without_(X,DO) X([&](typename decltype(X)::Type&) {},[&]() DO);
 
 #endif
