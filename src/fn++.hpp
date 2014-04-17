@@ -275,4 +275,12 @@ private:
 
 };
 
+#define FN_OPTIONAL_T_WITH(_1,_2,_3,_4,NAME,...) NAME
+#define FN_OPTIONAL_T_WITH2(X,DO) X([&](decltype(X)::Type const& X) DO);
+#define FN_OPTIONAL_T_WITH3(F,X,DO) F([&](decltype(F)::Type const& X) DO);
+#define FN_OPTIONAL_T_WITH4(F,X,DO,WO) F([&](decltype(F)::Type const& X) DO,[&]WO);
+#define with_(...) FN_OPTIONAL_T_WITH(__VA_ARGS__,\
+    FN_OPTIONAL_T_WITH4, FN_OPTIONAL_T_WITH3, FN_OPTIONAL_T_WITH2)(__VA_ARGS__)
+#define without_(X,DO) X([&](decltype(X)::Type const&) {},[&]() DO);
+
 #endif
