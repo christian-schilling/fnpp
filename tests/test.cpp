@@ -270,13 +270,20 @@ can_be_accessed_easier_using_macros)
         else{ EXPECT_EQ(-1,out); }
 
         out = -2;
-        with_(getnr(i),nr,{
+        with_(getnr(i))_as(nr,{
+            out = nr;
+        });
+        if(!(i%2)){ EXPECT_EQ(i,out) << i; }
+        else{ EXPECT_EQ(-2,out) << i; }
+
+        out = -2;
+        with_(getnr(i))_as(nr,{
             out = nr;
         },{
             out = -1;
         });
-        if(!(i%2)){ EXPECT_EQ(i,out); }
-        else{ EXPECT_EQ(-1,out); }
+        if(!(i%2)){ EXPECT_EQ(i,out) << i; }
+        else{ EXPECT_EQ(-1,out) << i; }
     }
 }
 
