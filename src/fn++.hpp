@@ -5,9 +5,9 @@ namespace fn{
 
 namespace _ {
 
-template< class T > struct remove_reference      {typedef T type;};
-template< class T > struct remove_reference<T&>  {typedef T type;};
-template< class T > struct remove_reference<T&&> {typedef T type;};
+template< class R > struct remove_reference      {typedef R T;};
+template< class R > struct remove_reference<R&>  {typedef R T;};
+template< class R > struct remove_reference<R&&> {typedef R T;};
 
 template<typename C>
 struct noconst{ typedef C T; };
@@ -220,8 +220,25 @@ auto filter(G const& g)
 template<typename T>
 class optional
 {
+    friend class optional<typename _::noconst<T>::T&>;
+    friend class optional<typename _::noconst<T>::T>;
+    friend class optional<typename _::noconst<
+        typename _::remove_reference<T>::T
+    >::T const&>;
+    friend class optional<typename _::noconst<
+        typename _::remove_reference<T>::T
+    >::T&>;
+    friend class optional<T const&>;
+    friend class optional<T const>;
+    friend class optional<T&>;
+
 public:
     typedef T Type;
+
+    template<class O>
+    inline optional(optional<O> const& original):
+        has_value(original.has_value),
+        value(original.value){}
 
     inline optional(optional const& original):
         has_value(original.has_value),
@@ -281,11 +298,11 @@ private:
 
 #define FN_OPTIONAL_T_WITH(_1,_2,NAME,...) NAME
 
-#define FN_OPTIONAL_T_WITH1(F) F([&](typename fn::_::remove_reference<decltype(F)>::type::Type&
-#define FN_OPTIONAL_T_WITH2(X,DO) X([&](typename fn::_::remove_reference<decltype(X)>::type::Type& X) DO);
+#define FN_OPTIONAL_T_WITH1(F) F([&](typename fn::_::remove_reference<decltype(F)>::T::Type&
+#define FN_OPTIONAL_T_WITH2(X,DO) X([&](typename fn::_::remove_reference<decltype(X)>::T::Type& X) DO);
 #define with_(...) FN_OPTIONAL_T_WITH(__VA_ARGS__,\
     FN_OPTIONAL_T_WITH2, FN_OPTIONAL_T_WITH1)(__VA_ARGS__)
-#define without_(X,DO) X([&](typename fn::_::remove_reference<decltype(X)>::type::Type&) {},[&]() DO);
+#define without_(X,DO) X([&](typename fn::_::remove_reference<decltype(X)>::T::Type&) {},[&]() DO);
 
 #define FN_OPTIONAL_T_AS(_1,_2,_3,NAME,...) NAME
 #define FN_OPTIONAL_T_AS2(X,DO) X)DO)
