@@ -5,6 +5,10 @@ namespace fn{
 
 namespace _ {
 
+template< class T > struct remove_reference      {typedef T type;};
+template< class T > struct remove_reference<T&>  {typedef T type;};
+template< class T > struct remove_reference<T&&> {typedef T type;};
+
 template<typename C>
 struct noconst{ typedef C T; };
 template<typename B>
@@ -277,11 +281,11 @@ private:
 
 #define FN_OPTIONAL_T_WITH(_1,_2,NAME,...) NAME
 
-#define FN_OPTIONAL_T_WITH1(F) F([&](typename decltype(F)::Type&
-#define FN_OPTIONAL_T_WITH2(X,DO) X([&](typename decltype(X)::Type& X) DO);
+#define FN_OPTIONAL_T_WITH1(F) F([&](typename fn::_::remove_reference<decltype(F)>::type::Type&
+#define FN_OPTIONAL_T_WITH2(X,DO) X([&](typename fn::_::remove_reference<decltype(X)>::type::Type& X) DO);
 #define with_(...) FN_OPTIONAL_T_WITH(__VA_ARGS__,\
     FN_OPTIONAL_T_WITH2, FN_OPTIONAL_T_WITH1)(__VA_ARGS__)
-#define without_(X,DO) X([&](typename decltype(X)::Type&) {},[&]() DO);
+#define without_(X,DO) X([&](typename fn::_::remove_reference<decltype(X)>::type::Type&) {},[&]() DO);
 
 #define FN_OPTIONAL_T_AS(_1,_2,_3,NAME,...) NAME
 #define FN_OPTIONAL_T_AS2(X,DO) X)DO)

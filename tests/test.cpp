@@ -287,6 +287,46 @@ can_be_accessed_easier_using_macros)
     }
 }
 
+TEST(The_macros,
+work_also_with_references_to_optionals)
+{
+    for(auto const i: range(5)){
+        int out;
+        auto x = getnr(i);
+        auto const& nr = x;
+
+        out = -2;
+        with_(nr,{
+            out = nr;
+        });
+        if(!(i%2)){ EXPECT_EQ(i,out); }
+        else{ EXPECT_EQ(-2,out); }
+
+        out = -2;
+        without_(nr,{
+            out = -1;
+        });
+        if(!(i%2)){ EXPECT_EQ(-2,out); }
+        else{ EXPECT_EQ(-1,out); }
+
+        out = -2;
+        with_(nr)_as(nr,{
+            out = nr;
+        });
+        if(!(i%2)){ EXPECT_EQ(i,out) << i; }
+        else{ EXPECT_EQ(-2,out) << i; }
+
+        out = -2;
+        with_(nr)_as(nr,{
+            out = nr;
+        },{
+            out = -1;
+        });
+        if(!(i%2)){ EXPECT_EQ(i,out) << i; }
+        else{ EXPECT_EQ(-1,out) << i; }
+    }
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
