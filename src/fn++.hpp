@@ -216,6 +216,16 @@ auto filter(G const& g)
     return filter(_::IsTrue<decltype(*g.begin())>{},g);
 }
 
+template<typename I,typename T, typename F>
+T reduce(I const& iter, T const& neutral, F const& f)
+{
+    T v = neutral;
+    for(auto const& x: iter){
+        v = f(v,x);
+    }
+    return v;
+}
+
 
 template<typename T>
 class optional

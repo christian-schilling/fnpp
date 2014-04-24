@@ -138,6 +138,14 @@ allows_iteration_with_an_index)
     EXPECT_EQ(count,input.size());
 }
 
+TEST(The_reduce_function,
+does_reduction)
+{
+    std::vector<int> input{23,6,0,8,0,12,4,10,0};
+
+    auto sum = reduce(input,0,[](int a, int b){ return a+b; });
+    EXPECT_EQ(63,sum);
+}
 
 optional<int> twice_in_range(int from, int to, int i)
 {
