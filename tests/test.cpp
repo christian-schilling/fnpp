@@ -335,6 +335,19 @@ work_also_with_references_to_optionals)
     }
 }
 
+TEST(as_range,makes_begin_end_pairs_compatible_with_range_based_for)
+{
+    std::vector<int> in{1,4,6,2,10,55};
+    size_t n = 0;
+
+    for(auto const i: as_range(in.begin(),in.end())){
+        EXPECT_EQ(in[n],i);
+        n++;
+    }
+
+    EXPECT_EQ(in.size(),n);
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

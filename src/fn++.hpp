@@ -89,6 +89,24 @@ auto map(FN const& fn,G const& g) -> _::Map<FN,G,
 }
 
 namespace _ {
+template<typename OtherIT>
+class AsRange
+{
+    OtherIT const from;
+    OtherIT const to;
+
+public:
+    AsRange(OtherIT from, OtherIT to): from(from), to(to) {}
+    OtherIT const& begin() const { return from; }
+    OtherIT const& end() const { return to; }
+};};
+
+template<typename OtherIT>
+auto as_range(OtherIT const& b, OtherIT const& e) -> _::AsRange<OtherIT>{
+    return _::AsRange<OtherIT>(b,e);
+}
+
+namespace _ {
 template<
     template<typename,typename> class PairT,
     typename A,
