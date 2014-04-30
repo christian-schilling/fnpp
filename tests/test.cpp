@@ -278,14 +278,14 @@ can_be_accessed_easier_using_macros)
         else{ EXPECT_EQ(-1,out); }
 
         out = -2;
-        with_(getnr(i))_as(nr,{
+        use_(getnr(i))_as(nr,{
             out = nr;
         });
         if(!(i%2)){ EXPECT_EQ(i,out) << i; }
         else{ EXPECT_EQ(-2,out) << i; }
 
         out = -2;
-        with_(getnr(i))_as(nr,{
+        use_(getnr(i))_as_(nr,{
             out = nr;
         },{
             out = -1;
@@ -318,14 +318,14 @@ work_also_with_references_to_optionals)
         else{ EXPECT_EQ(-1,out); }
 
         out = -2;
-        with_(nr)_as(nr,{
+        use_(nr)_as(nr,{
             out = nr;
         });
         if(!(i%2)){ EXPECT_EQ(i,out) << i; }
         else{ EXPECT_EQ(-2,out) << i; }
 
         out = -2;
-        with_(nr)_as(nr,{
+        use_(nr)_as_(nr,{
             out = nr;
         },{
             out = -1;

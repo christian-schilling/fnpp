@@ -324,18 +324,16 @@ private:
 
 };
 
-#define FN_OPTIONAL_T_WITH(_1,_2,NAME,...) NAME
+#ifndef _MSC_VER
+#define FN_TYPENAME typename
+#endif
 
-#define FN_OPTIONAL_T_WITH1(F) F([&](typename fn::_::remove_reference<decltype(F)>::T::Type&
-#define FN_OPTIONAL_T_WITH2(X,DO) X([&](typename fn::_::remove_reference<decltype(X)>::T::Type& X) DO);
-#define with_(...) FN_OPTIONAL_T_WITH(__VA_ARGS__,\
-    FN_OPTIONAL_T_WITH2, FN_OPTIONAL_T_WITH1)(__VA_ARGS__)
-#define without_(X,DO) X([&](typename fn::_::remove_reference<decltype(X)>::T::Type&) {},[&]() DO);
 
-#define FN_OPTIONAL_T_AS(_1,_2,_3,NAME,...) NAME
-#define FN_OPTIONAL_T_AS2(X,DO) X)DO)
-#define FN_OPTIONAL_T_AS3(X,DO,WO) X)DO,[&]()WO)
-#define _as(...) FN_OPTIONAL_T_AS(__VA_ARGS__,\
-    FN_OPTIONAL_T_AS3, FN_OPTIONAL_T_AS2)(__VA_ARGS__)
+#define use_(F) F([&](FN_TYPENAME fn::_::remove_reference<decltype(F)>::T::Type&
+#define _as_(X,DO,WO) X)DO,[&]()WO)
+#define _as(X,DO) X)DO)
+
+#define with_(X,DO) X([&](FN_TYPENAME fn::_::remove_reference<decltype(X)>::T::Type& X) DO);
+#define without_(X,DO) X([&](FN_TYPENAME fn::_::remove_reference<decltype(X)>::T::Type&) {},[&]() DO);
 
 #endif
