@@ -19,3 +19,5 @@ Features
 Examples
 --------
 see test/tests.cpp
+
+[![Build Status](https://travis-ci.org/initcrash/fnpp.svg?branch=master)](https://travis-ci.org/initcrash/fnpp)
