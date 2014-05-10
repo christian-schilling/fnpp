@@ -1,6 +1,7 @@
 #include "fn++.hpp"
 #include <stdio.h>
 #include <vector>
+#include <map>
 #include <utility>
 #include <gtest/gtest.h>
 
@@ -346,6 +347,63 @@ TEST(as_range,makes_begin_end_pairs_compatible_with_range_based_for)
     }
 
     EXPECT_EQ(in.size(),n);
+}
+
+TEST(The_element_function,
+accesses_containers_with_range_checking_returning_an_optional)
+{
+    std::vector<int> v{11,3,4,6,2,5};
+    int n = 0;
+
+    {
+        auto t = element(3).of(v);
+        EXPECT_TRUE(t.has_value);
+        EXPECT_EQ(6, t or n);
+    }
+
+    {
+        auto t = element(30).of(v);
+        EXPECT_FALSE(t.has_value);
+        EXPECT_EQ(0, t or n);
+    }
+
+    {
+        auto second = element(1);
+        auto t = second.of(v);
+        EXPECT_TRUE(t.has_value);
+        EXPECT_EQ(3, t or n);
+    }
+
+    {
+        EXPECT_EQ(6, element(3).of(v) or n);
+        use_(element(3).of(v))_as_(i,{
+            i = 4;
+        },{ ADD_FAILURE(); });
+        EXPECT_EQ(4, v.at(3));
+    }
+
+    std::map<std::string,int> m = {{
+        {"one",1},
+        {"two",2},
+    }};
+
+    {
+        auto o = element("one").in(m);
+        EXPECT_TRUE(o.has_value);
+        EXPECT_EQ(1, o or n);
+    }
+
+    {
+        auto o = element("not").in(m);
+        EXPECT_FALSE(o.has_value);
+    }
+
+    {
+        auto two = element("two");
+        auto o = two.in(m);
+        EXPECT_TRUE(o.has_value);
+        EXPECT_EQ(2, o or n);
+    }
 }
 
 int main(int argc, char **argv) {

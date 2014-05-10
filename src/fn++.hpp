@@ -276,10 +276,13 @@ public:
         has_value(original.has_value),
         value(original.value){}
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wuninitialized"
     inline optional():
         has_value(false),
         value(*&value)
     {}
+#pragma clang diagnostic pop
 
     inline optional(T const& value): has_value(true), value(value){}
 
@@ -322,7 +325,47 @@ private:
     T value;
 };
 
+namespace _ {
+
+template<class T>
+class Element
+{
+    T const i;
+public:
+    Element(T const i): i{i} {}
+
+    template<class Container>
+    auto of(Container& c) ->optional<decltype(c.at(i))>
+    {
+        if(static_cast<decltype(c.size())>(i) < c.size()){
+            return c.at(i);
+        }
+        else{
+            return {};
+        }
+    }
+
+    template<class Container>
+    auto in(Container& c) ->optional<decltype(c.at(i))>
+    {
+        if(c.count(i)){
+            return c.at(i);
+        }
+        else{
+            return {};
+        }
+    }
 };
+}
+
+template<class T>
+_::Element<T> element(T const i)
+{
+    return _::Element<T>(i);
+}
+
+
+}
 
 #ifndef _MSC_VER
 #define FN_TYPENAME typename

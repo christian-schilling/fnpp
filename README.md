@@ -12,6 +12,8 @@ Features
     - zip
     - enumerate
 * optional<T>: represent a value that may or may not be present
+* element(...).of(...) / element(...).in(...): range checked access to
+  containers, returning optional<T> objects.
 * zero dependencies (not even std::*)
 
 Examples
