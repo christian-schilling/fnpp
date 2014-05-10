@@ -1,4 +1,4 @@
-all : test example
+all : test
 	./test
 	# ./example
 
