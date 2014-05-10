@@ -375,7 +375,13 @@ accesses_containers_with_range_checking_returning_an_optional)
     }
 
     {
-        EXPECT_EQ(6, element(3).of(v) or n);
+        auto t = element(-1).of(v);
+        EXPECT_TRUE(t.has_value);
+        EXPECT_EQ(5, t or n);
+    }
+
+    {
+        EXPECT_EQ(6, v.at(3));
         use_(element(3).of(v))_as_(i,{
             i = 4;
         },{ ADD_FAILURE(); });

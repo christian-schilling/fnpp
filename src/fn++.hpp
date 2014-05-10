@@ -335,10 +335,12 @@ public:
     Element(T const i): i{i} {}
 
     template<class Container>
-    auto of(Container& c) ->optional<decltype(c.at(i))>
+    auto of(Container& c) ->optional<decltype(c.at(0))>
     {
-        if(static_cast<decltype(c.size())>(i) < c.size()){
-            return c.at(i);
+        auto const size = c.size();
+        auto index = static_cast<decltype(size)>(i<0?(size+i):i);
+        if(index < size){
+            return c.at(index);
         }
         else{
             return {};
