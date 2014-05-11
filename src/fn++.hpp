@@ -345,6 +345,7 @@ public:
         else{
             return {};
         }
+        (void)c.back(); // protect against using with std::map
     }
 
     template<class Container>
