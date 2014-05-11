@@ -381,6 +381,12 @@ accesses_containers_with_range_checking_returning_an_optional)
     }
 
     {
+        std::vector<int> w;
+        EXPECT_FALSE(element(-1).of(w).has_value);
+        EXPECT_FALSE(element(0).of(w).has_value);
+    }
+
+    {
         EXPECT_EQ(6, v.at(3));
         use_(element(3).of(v))_as_(i,{
             i = 4;
