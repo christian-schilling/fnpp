@@ -376,7 +376,10 @@ _::Element<T> element(T const i)
 
 #ifndef _MSC_VER
 #define FN_TYPENAME typename
+#else
+#define FN_TYPENAME
 #endif
+
 
 
 #define use_(F) F([&](FN_TYPENAME fn::_::remove_reference<decltype(F)>::T::Type&
