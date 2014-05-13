@@ -276,13 +276,17 @@ public:
         has_value(original.has_value),
         value(original.value){}
 
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wuninitialized"
+#endif
     inline optional():
         has_value(false),
         value(*&value)
     {}
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
 
     inline optional(T const& value): has_value(true), value(value){}
 
