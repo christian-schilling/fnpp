@@ -3,7 +3,7 @@
 
 namespace fn{
 
-namespace _ {
+namespace fn_ {
 
 template< class R > struct remove_reference      {typedef R T;};
 template< class R > struct remove_reference<R&>  {typedef R T;};
@@ -52,11 +52,11 @@ public:
 };};
 
 template<typename T,typename ...Args>
-auto range(T const& t,Args const& ...args) -> _::Range<T>{
-    return _::Range<T>(t,args...);
+auto range(T const& t,Args const& ...args) -> fn_::Range<T>{
+    return fn_::Range<T>(t,args...);
 }
 
-namespace _ {
+namespace fn_ {
 template<typename FN,typename G, typename OtherIT>
 class Map
 {
@@ -83,12 +83,12 @@ public:
 };};
 
 template<typename FN,typename G>
-auto map(FN const& fn,G const& g) -> _::Map<FN,G,
-    typename _::noconst<decltype(g.begin())>::T>{
-    return _::Map<FN,G,typename _::noconst<decltype(g.begin())>::T>(fn,g);
+auto map(FN const& fn,G const& g) -> fn_::Map<FN,G,
+    typename fn_::noconst<decltype(g.begin())>::T>{
+    return fn_::Map<FN,G,typename fn_::noconst<decltype(g.begin())>::T>(fn,g);
 }
 
-namespace _ {
+namespace fn_ {
 template<typename OtherIT>
 class AsRange
 {
@@ -102,11 +102,11 @@ public:
 };};
 
 template<typename OtherIT>
-auto as_range(OtherIT const& b, OtherIT const& e) -> _::AsRange<OtherIT>{
-    return _::AsRange<OtherIT>(b,e);
+auto as_range(OtherIT const& b, OtherIT const& e) -> fn_::AsRange<OtherIT>{
+    return fn_::AsRange<OtherIT>(b,e);
 }
 
-namespace _ {
+namespace fn_ {
 template<
     template<typename,typename> class PairT,
     typename A,
@@ -152,7 +152,7 @@ public:
     IT const& end() const { return to; }
 };};
 
-namespace _ {
+namespace fn_ {
 template<typename A, typename B>
 struct Pair
 {
@@ -172,14 +172,14 @@ struct Pair
     B& item;
 };};
 
-template<template<typename,typename> class PairT=_::Pair, typename A,typename B>
-auto zip(A const& a,B const& b) -> _::Zip<PairT,A,B,
-        typename _::noconst<decltype(a.begin())>::T,
-        typename _::noconst<decltype(b.begin())>::T
+template<template<typename,typename> class PairT=fn_::Pair, typename A,typename B>
+auto zip(A const& a,B const& b) -> fn_::Zip<PairT,A,B,
+        typename fn_::noconst<decltype(a.begin())>::T,
+        typename fn_::noconst<decltype(b.begin())>::T
     >{
-    return _::Zip<PairT,A,B,
-        typename _::noconst<decltype(a.begin())>::T,
-        typename _::noconst<decltype(b.begin())>::T
+    return fn_::Zip<PairT,A,B,
+        typename fn_::noconst<decltype(a.begin())>::T,
+        typename fn_::noconst<decltype(b.begin())>::T
     >(a,b);
 }
 
@@ -190,7 +190,7 @@ auto enumerate(A const& a)
     return zip(range(-1),a);
 }
 
-namespace _ {
+namespace fn_ {
 template<typename FN,typename G, typename OtherIT>
 class Filter
 {
@@ -221,17 +221,17 @@ public:
 };};
 
 template<typename FN,typename G>
-auto filter(FN const& fn,G const& g) -> _::Filter<FN,G,
-    typename _::noconst<decltype(g.begin())>::T>
+auto filter(FN const& fn,G const& g) -> fn_::Filter<FN,G,
+    typename fn_::noconst<decltype(g.begin())>::T>
 {
-    return _::Filter<FN,G,typename _::noconst<decltype(g.begin())>::T>(fn,g);
+    return fn_::Filter<FN,G,typename fn_::noconst<decltype(g.begin())>::T>(fn,g);
 }
 
 template<typename G>
 auto filter(G const& g)
-     -> decltype(filter(_::IsTrue<decltype(*g.begin())>{},(*g.begin(),g)))
+     -> decltype(filter(fn_::IsTrue<decltype(*g.begin())>{},(*g.begin(),g)))
 {
-    return filter(_::IsTrue<decltype(*g.begin())>{},g);
+    return filter(fn_::IsTrue<decltype(*g.begin())>{},g);
 }
 
 template<typename I,typename T, typename F>
@@ -248,13 +248,13 @@ T reduce(I const& iter, T const& neutral, F const& f)
 template<typename T>
 class optional
 {
-    friend class optional<typename _::noconst<T>::T&>;
-    friend class optional<typename _::noconst<T>::T>;
-    friend class optional<typename _::noconst<
-        typename _::remove_reference<T>::T
+    friend class optional<typename fn_::noconst<T>::T&>;
+    friend class optional<typename fn_::noconst<T>::T>;
+    friend class optional<typename fn_::noconst<
+        typename fn_::remove_reference<T>::T
     >::T const&>;
-    friend class optional<typename _::noconst<
-        typename _::remove_reference<T>::T
+    friend class optional<typename fn_::noconst<
+        typename fn_::remove_reference<T>::T
     >::T&>;
     friend class optional<T const&>;
     friend class optional<T const>;
@@ -298,12 +298,25 @@ public:
         );
     }
 
+    inline bool operator==(optional const& other) const
+    {
+        if(has_value && other.has_value){
+            return value == other.value;
+        }
+        return false;
+    }
+
+    inline bool operator!=(optional const& other) const
+    {
+        return !(*this == other);
+    }
+
     template<typename ValueF>
     inline optional const& operator()(
         ValueF const& handle_value) const
     {
 #ifndef _MSC_VER
-        static_assert(_::is_void<
+        static_assert(fn_::is_void<
             decltype(handle_value(const_cast<T&>(value)))>() == true,
             "this function must not have a return value"
         );
@@ -329,7 +342,7 @@ private:
     T value;
 };
 
-namespace _ {
+namespace fn_ {
 
 template<class T>
 class Element
@@ -393,9 +406,9 @@ public:
 }
 
 template<class T>
-_::Element<T> element(T const i)
+fn_::Element<T> element(T const i)
 {
-    return _::Element<T>(i);
+    return fn_::Element<T>(i);
 }
 
 
@@ -409,11 +422,11 @@ _::Element<T> element(T const i)
 
 
 
-#define use_(F) F([&](FN_TYPENAME fn::_::remove_reference<decltype(F)>::T::Type&
+#define use_(F) F([&](FN_TYPENAME fn::fn_::remove_reference<decltype(F)>::T::Type&
 #define _as_(X,DO,WO) X)DO,[&]()WO)
 #define _as(X,DO) X)DO)
 
-#define with_(X,DO) X([&](FN_TYPENAME fn::_::remove_reference<decltype(X)>::T::Type& X) DO);
-#define without_(X,DO) X([&](FN_TYPENAME fn::_::remove_reference<decltype(X)>::T::Type&) {},[&]() DO);
+#define with_(X,DO) X([&](FN_TYPENAME fn::fn_::remove_reference<decltype(X)>::T::Type& X) DO);
+#define without_(X,DO) X([&](FN_TYPENAME fn::fn_::remove_reference<decltype(X)>::T::Type&) {},[&]() DO);
 
 #endif

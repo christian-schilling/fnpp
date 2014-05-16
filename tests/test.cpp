@@ -257,6 +257,34 @@ optional<int> getnr(int nr)
     }
 }
 
+TEST(Two_optional_values,
+can_tested_for_equality)
+{
+    {
+        optional<int> a = 4;
+        optional<int> b = 3;
+        EXPECT_NE(a,b);
+    }
+
+    {
+        optional<int> a = 4;
+        optional<int> b = 4;
+        EXPECT_EQ(a,b);
+    }
+
+    {
+        optional<int> a = {};
+        optional<int> b = 4;
+        EXPECT_NE(a,b);
+    }
+
+    {
+        optional<int> a = {};
+        optional<int> b = {};
+        EXPECT_NE(a,b);
+    }
+}
+
 TEST(An_optional_value,
 can_be_accessed_easier_using_macros)
 {
