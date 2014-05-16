@@ -339,6 +339,21 @@ public:
     Element(T const i): i{i} {}
 
     template<class Container>
+    auto optional_of(Container& c)
+         ->optional<typename remove_reference<decltype(c.at(0))>::T::Type>
+    {
+        auto const size = c.size();
+        auto index = static_cast<decltype(size)>(i<0?(size+i):i);
+        if(index < size){
+            return c.at(index);
+        }
+        else{
+            return {};
+        }
+        (void)c.back(); // protect against using with std::map
+    }
+
+    template<class Container>
     auto of(Container& c) ->optional<decltype(c.at(0))>
     {
         auto const size = c.size();
@@ -354,6 +369,18 @@ public:
 
     template<class Container>
     auto in(Container& c) ->optional<decltype(c.at(i))>
+    {
+        if(c.count(i)){
+            return c.at(i);
+        }
+        else{
+            return {};
+        }
+    }
+
+    template<class Container>
+    auto optional_in(Container& c)
+         ->optional<typename remove_reference<decltype(c.at(i))>::T::Type>
     {
         if(c.count(i)){
             return c.at(i);

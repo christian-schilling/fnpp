@@ -418,6 +418,36 @@ accesses_containers_with_range_checking_returning_an_optional)
     }
 }
 
+TEST(The_element_function,
+accesses_containers_of_optionals)
+{
+    std::vector<optional<int>> v{11,{},4,6,2,5};
+
+    use_(element(3).optional_of(v))_as_(i,{
+        EXPECT_EQ(6,i);
+    },{ ADD_FAILURE(); });
+
+    use_(element(1).optional_of(v))_as(i,{
+        (void)i;
+        ADD_FAILURE();
+    });
+
+    std::map<std::string,optional<int>> m = {{
+        {"one",1},
+        {"two",2},
+        {"none",{}},
+    }};
+
+    use_(element("one").optional_in(m))_as_(i,{
+        EXPECT_EQ(1,i);
+    },{ ADD_FAILURE(); });
+
+    use_(element("none").optional_in(m))_as(i,{
+        (void)i;
+        ADD_FAILURE();
+    });
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
