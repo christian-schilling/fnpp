@@ -183,24 +183,21 @@ can_change_if_it_is_a_reference)
     r = 6;
     EXPECT_EQ(6,i);
 
-    with_(o,{ o = 9; });
+    with_(o){ o = 9; };
 
     EXPECT_EQ(9,i);
 }
 
 TEST(An_optional_value,
-keeps_beeing_optional_if_only_the_exists_case_is_handled)
+can_call_a_handler_depending_on_its_status)
 {
     std::vector<int> in{1,4,6,2,10,55};
-    std::vector<int> expected{-1,8,12,-1,-1,-1};
-    std::vector<int> expected2{0,8*3,12*3,0,0,0};
+    std::vector<int> expected{0,8*3,12*3,0,0,0};
     for(size_t i=0;i<in.size();i++){
         int out = 0;
-        optional<int> const& result = twice_in_range(3,7,in[i]);
-        optional<int> const& still_optional = result([&](int v){out=v*3;});
-        auto r = still_optional or -1;
-        EXPECT_EQ(expected[i],r);
-        EXPECT_EQ(expected2[i],out);
+        optional<int> result = twice_in_range(3,7,in[i]);
+        result >> [&](int v){out=v*3;};
+        EXPECT_EQ(expected[i],out);
     }
 }
 
@@ -213,10 +210,10 @@ can_be_used_by_providing_handlers_for_both_cases)
     for(size_t i=0;i<in.size();i++){
         auto result = twice_in_range(3,7,in[i]);
         typedef decltype(result)::Type T;
-        auto r = result(
-            [](T v){return 2*v;},
-            [](){return -1;}
-        );
+        auto r = result
+            >>[](T v){return 2*v;}
+            >>[](){return -1;};
+
         EXPECT_EQ(expected[i],r);
     }
 }
@@ -293,32 +290,33 @@ can_be_accessed_easier_using_macros)
         auto nr = getnr(i);
 
         out = -2;
-        with_(nr,{
+        with_(nr){
             out = nr;
-        });
+        };
         if(!(i%2)){ EXPECT_EQ(i,out); }
         else{ EXPECT_EQ(-2,out); }
 
         out = -2;
-        without_(nr,{
+        !nr >>[&]{
             out = -1;
-        });
+        };
         if(!(i%2)){ EXPECT_EQ(-2,out); }
         else{ EXPECT_EQ(-1,out); }
 
         out = -2;
-        use_(getnr(i))_as(nr,{
+        use_(getnr(i))_as(nr){
             out = nr;
-        });
+        };
         if(!(i%2)){ EXPECT_EQ(i,out) << i; }
         else{ EXPECT_EQ(-2,out) << i; }
 
         out = -2;
-        use_(getnr(i))_as_(nr,{
+        use_(getnr(i))_as(nr){
             out = nr;
-        },{
+        }
+        >>[&]{
             out = -1;
-        });
+        };
         if(!(i%2)){ EXPECT_EQ(i,out) << i; }
         else{ EXPECT_EQ(-1,out) << i; }
     }
@@ -330,35 +328,35 @@ work_also_with_references_to_optionals)
     for(auto const i: range(5)){
         int out;
         auto x = getnr(i);
-        auto const& nr = x;
+        auto& nr = x;
 
         out = -2;
-        with_(nr,{
+        with_(nr){
             out = nr;
-        });
+        };
         if(!(i%2)){ EXPECT_EQ(i,out); }
         else{ EXPECT_EQ(-2,out); }
 
         out = -2;
-        without_(nr,{
+        !nr >>[&]{
             out = -1;
-        });
+        };
         if(!(i%2)){ EXPECT_EQ(-2,out); }
         else{ EXPECT_EQ(-1,out); }
 
         out = -2;
-        use_(nr)_as(nr,{
+        use_(nr)_as(nr){
             out = nr;
-        });
+        };
         if(!(i%2)){ EXPECT_EQ(i,out) << i; }
         else{ EXPECT_EQ(-2,out) << i; }
 
-        out = -2;
-        use_(nr)_as_(nr,{
-            out = nr;
-        },{
-            out = -1;
-        });
+        out = use_(nr)_as(nr){
+            return nr;
+        }
+        >>[]{
+            return -1;
+        };
         if(!(i%2)){ EXPECT_EQ(i,out) << i; }
         else{ EXPECT_EQ(-1,out) << i; }
     }
@@ -416,9 +414,10 @@ accesses_containers_with_range_checking_returning_an_optional)
 
     {
         EXPECT_EQ(6, v.at(3));
-        use_(element(3).of(v))_as_(i,{
+        use_(element(3).of(v))_as(i){
             i = 4;
-        },{ ADD_FAILURE(); });
+        }
+        >>[]{ ADD_FAILURE(); };
         EXPECT_EQ(4, v.at(3));
     }
 
@@ -451,14 +450,15 @@ accesses_containers_of_optionals)
 {
     std::vector<optional<int>> v{11,{},4,6,2,5};
 
-    use_(element(3).optional_of(v))_as_(i,{
+    use_(element(3).of(v)--)_as(i){
         EXPECT_EQ(6,i);
-    },{ ADD_FAILURE(); });
+    }
+    >>[]{ ADD_FAILURE(); };
 
-    use_(element(1).optional_of(v))_as(i,{
+    use_(element(1).of(v)--)_as(i){
         (void)i;
         ADD_FAILURE();
-    });
+    };
 
     std::map<std::string,optional<int>> m = {{
         {"one",1},
@@ -466,14 +466,23 @@ accesses_containers_of_optionals)
         {"none",{}},
     }};
 
-    use_(element("one").optional_in(m))_as_(i,{
+    use_(element("one").in(m)--)_as(i){
         EXPECT_EQ(1,i);
-    },{ ADD_FAILURE(); });
+    }
+    >>[]{ ADD_FAILURE(); };
 
-    use_(element("none").optional_in(m))_as(i,{
+    element("one").in(m)
+    -->>[](int i){
+        EXPECT_EQ(1,i);
+    }
+    >>[]{
+        ADD_FAILURE();
+    };
+
+    use_(element("none").in(m)--)_as(i){
         (void)i;
         ADD_FAILURE();
-    });
+    };
 }
 
 int main(int argc, char **argv) {

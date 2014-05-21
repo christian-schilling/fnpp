@@ -244,6 +244,82 @@ T reduce(I const& iter, T const& neutral, F const& f)
     return v;
 }
 
+namespace fn_ {
+
+template<typename O, typename ValueF, typename T>
+struct optional_helper
+{
+    O o;
+    T value;
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wuninitialized"
+#endif
+    optional_helper(O const& o,typename O::Type& o_value, ValueF const& handle_value):
+        o(o),
+        value(o.has_value
+                ? handle_value(const_cast<typename O::Type&>(o_value))
+                : *&value)
+    {}
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
+    template<typename EmptyF>
+    auto operator>>(EmptyF const& handle_no_value) const
+        ->decltype(handle_no_value())
+    {
+        return o.has_value
+            ? value
+            : handle_no_value();
+    }
+};
+
+template<typename O, typename ValueF>
+struct optional_helper<O,ValueF,void>
+{
+    O o;
+
+    optional_helper(O const& o,typename O::Type& o_value, ValueF const& handle_value):
+        o(o)
+    {
+        if(o.has_value){
+            handle_value(const_cast<typename O::Type&>(o_value));
+        }
+    }
+
+    template<typename EmptyF>
+    auto operator>>(EmptyF const& handle_no_value) const
+        ->decltype(handle_no_value())
+    {
+        if(!o.has_value){
+            handle_no_value();
+        }
+    }
+};
+
+
+template<typename O>
+struct optional_helper<O,void,void>
+{
+    O o;
+
+    optional_helper(O const& o):
+        o(o)
+    {}
+
+    template<typename EmptyF>
+    auto operator>>(EmptyF const& handle_no_value) const
+        ->decltype(handle_no_value())
+    {
+        if(!o.has_value){
+            handle_no_value();
+        }
+    }
+};
+
+}
 
 template<typename T>
 class optional
@@ -259,6 +335,11 @@ class optional
     friend class optional<T const&>;
     friend class optional<T const>;
     friend class optional<T&>;
+
+public:
+    bool const has_value;
+private:
+    T value;
 
 public:
     typedef T Type;
@@ -292,10 +373,7 @@ public:
 
     inline T operator||(T fallback) const
     {
-        return (*this)(
-            [](T& v)->T{return v;},
-            [&]()->T{return fallback;}
-        );
+        return has_value ? value : fallback;
     }
 
     inline bool operator==(optional const& other) const
@@ -306,40 +384,38 @@ public:
         return false;
     }
 
+    typename fn_::remove_reference<T>::T operator--(int)
+    {
+        if(has_value){
+            return value;
+        }
+        else{
+            return {};
+        }
+    }
+
     inline bool operator!=(optional const& other) const
     {
         return !(*this == other);
     }
 
     template<typename ValueF>
-    inline optional const& operator()(
-        ValueF const& handle_value) const
+    inline auto operator>>(
+        ValueF const& handle_value)
+    ->fn_::optional_helper<
+        optional,
+        ValueF,
+        decltype(handle_value(const_cast<T&>(value)))
+    >
     {
-#ifndef _MSC_VER
-        static_assert(fn_::is_void<
-            decltype(handle_value(const_cast<T&>(value)))>() == true,
-            "this function must not have a return value"
-        );
-#endif
-        if(has_value) {handle_value(const_cast<T&>(value));}
-        return *this;
+        return {*this, value, handle_value};
     }
 
-    template<typename ValueF, typename EmptyF>
-    inline auto operator()(
-        ValueF const& handle_value,
-        EmptyF const& handle_no_value) const
-        ->decltype(handle_no_value())
+    inline auto operator!()
+        ->fn_::optional_helper<optional,void,void>
     {
-        return has_value ?
-                    handle_value(const_cast<T&>(value))
-                  : handle_no_value();
+        return {*this};
     }
-
-    bool const has_value;
-
-private:
-    T value;
 };
 
 namespace fn_ {
@@ -350,21 +426,6 @@ class Element
     T const i;
 public:
     Element(T const i): i{i} {}
-
-    template<class Container>
-    auto optional_of(Container& c)
-         ->optional<typename remove_reference<decltype(c.at(0))>::T::Type>
-    {
-        auto const size = c.size();
-        auto index = static_cast<decltype(size)>(i<0?(size+i):i);
-        if(index < size){
-            return c.at(index);
-        }
-        else{
-            return {};
-        }
-        (void)c.back(); // protect against using with std::map
-    }
 
     template<class Container>
     auto of(Container& c) ->optional<decltype(c.at(0))>
@@ -390,18 +451,6 @@ public:
             return {};
         }
     }
-
-    template<class Container>
-    auto optional_in(Container& c)
-         ->optional<typename remove_reference<decltype(c.at(i))>::T::Type>
-    {
-        if(c.count(i)){
-            return c.at(i);
-        }
-        else{
-            return {};
-        }
-    }
 };
 }
 
@@ -411,7 +460,6 @@ fn_::Element<T> element(T const i)
     return fn_::Element<T>(i);
 }
 
-
 }
 
 #ifndef _MSC_VER
@@ -420,13 +468,10 @@ fn_::Element<T> element(T const i)
 #define FN_TYPENAME
 #endif
 
+#define FN_OTYPE(X) FN_TYPENAME fn::fn_::remove_reference<decltype(X)>::T::Type
+#define use_(X) X >>[&](FN_OTYPE(X)&
+#define _as(X) X)
 
-
-#define use_(F) F([&](FN_TYPENAME fn::fn_::remove_reference<decltype(F)>::T::Type&
-#define _as_(X,DO,WO) X)DO,[&]()WO)
-#define _as(X,DO) X)DO)
-
-#define with_(X,DO) X([&](FN_TYPENAME fn::fn_::remove_reference<decltype(X)>::T::Type& X) DO);
-#define without_(X,DO) X([&](FN_TYPENAME fn::fn_::remove_reference<decltype(X)>::T::Type&) {},[&]() DO);
+#define with_(X) use_(X)_as(X)
 
 #endif
