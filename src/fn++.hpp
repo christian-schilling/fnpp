@@ -244,7 +244,12 @@ T reduce(I const& iter, T const& neutral, F const& f)
     return v;
 }
 
+
 namespace fn_ {
+
+template< class T > struct optional_ref_helper     {static T   h(T&)  {return {};}};
+template< class T > struct optional_ref_helper<T&> {static T&  h(T& t)  {return t;}};
+template< class T > struct optional_ref_helper<T&&>{static T&& h(T&& t) {return t;}};
 
 template<typename O, typename ValueF, typename T>
 struct optional_helper
@@ -260,7 +265,7 @@ struct optional_helper
         o(o),
         value(o.has_value
                 ? handle_value(const_cast<typename O::Type&>(o_value))
-                : *&value)
+                : fn_::optional_ref_helper<T>::h(value))
     {}
 #ifdef __clang__
 #pragma clang diagnostic pop
@@ -363,7 +368,7 @@ public:
 #endif
     inline optional():
         has_value(false),
-        value(*&value)
+        value(fn_::optional_ref_helper<T>::h(value))
     {}
 #ifdef __clang__
 #pragma clang diagnostic pop

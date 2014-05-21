@@ -188,6 +188,37 @@ can_change_if_it_is_a_reference)
     EXPECT_EQ(9,i);
 }
 
+optional<std::string> maybe_hello(int i)
+{
+    if(i==1){
+        return std::string("hello");
+    }
+    else{
+        return {};
+    }
+}
+TEST(An_optional_value,
+works_with_nontrivial_types)
+{
+    for(auto const i: range(5)){
+        std::cout << i << std::endl;
+
+        auto s = use_(maybe_hello(i))_as(s){
+            return s;
+        }
+        >>[]{
+            return std::string("nothing");
+        };
+
+        if(i==1){
+            EXPECT_EQ("hello",s);
+        }
+        else{
+            EXPECT_EQ("nothing",s);
+        }
+    }
+}
+
 TEST(An_optional_value,
 can_call_a_handler_depending_on_its_status)
 {
