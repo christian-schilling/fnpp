@@ -1,4 +1,4 @@
-script: make
+script: scons
 compiler:
  - clang
 before_install:

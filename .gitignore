@@ -1,1 +1,4 @@
 test
+runtests
+.sconsign.dblite
+*.o
