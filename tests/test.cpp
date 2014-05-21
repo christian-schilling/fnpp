@@ -201,8 +201,6 @@ TEST(An_optional_value,
 works_with_nontrivial_types)
 {
     for(auto const i: range(5)){
-        std::cout << i << std::endl;
-
         auto s = use_(maybe_hello(i))_as(s){
             return s;
         }
