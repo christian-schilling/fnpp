@@ -261,18 +261,22 @@ can_tested_for_equality)
         optional<int> a = 4;
         optional<int> b = 3;
         EXPECT_NE(a,b);
+        EXPECT_NE(a,3);
     }
 
     {
         optional<int> a = 4;
         optional<int> b = 4;
         EXPECT_EQ(a,b);
+        EXPECT_EQ(a,4);
     }
 
     {
         optional<int> a = {};
         optional<int> b = 4;
         EXPECT_NE(a,b);
+        EXPECT_NE(a,4);
+        EXPECT_NE(a,0);
     }
 
     {
