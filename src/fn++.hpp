@@ -66,11 +66,10 @@ class Map
         FN const& fn;
         OtherIT other_it;
     public:
-        typedef decltype(fn(*other_it)) value_type;
         IT(FN fn,OtherIT other_it): fn(fn), other_it(other_it) {}
         bool operator!=(IT& other){return other_it!=other.other_it;}
         IT const& operator++() {++other_it;return *this;}
-        auto operator*()const -> value_type {return fn(*other_it);}
+        auto operator*()const -> decltype(fn(*other_it)) { return fn(*other_it); }
     };
 
     IT const from;
@@ -200,8 +199,6 @@ class Filter
         FN const& fn;
         OtherIT other_it;
     public:
-        typedef typename OtherIT::value_type value_type;
-
         IT(FN fn,OtherIT other_it): fn(fn), other_it(other_it){}
         bool operator!=(IT& other){
             while(other_it!=other.other_it && !fn(*other_it)){ ++other_it; }
@@ -421,6 +418,10 @@ public:
     {
         return {*this};
     }
+
+#ifdef _MSC_VER
+    optional& operator=(optional&&){return *this;}
+#endif
 };
 
 namespace fn_ {
