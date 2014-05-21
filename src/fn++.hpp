@@ -387,10 +387,10 @@ public:
     typename fn_::remove_reference<T>::T operator--(int)
     {
         if(has_value){
-            return value;
+            return optional<typename fn_::remove_reference<T>::T::Type>{value};
         }
         else{
-            return {};
+            return optional<typename fn_::remove_reference<T>::T::Type>{};
         }
     }
 
