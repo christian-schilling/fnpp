@@ -20,4 +20,7 @@ Examples
 --------
 see test/tests.cpp
 
+with the arrival of C++1y optional<T> will be nicer:
+see example.cpp
+
 [![Build Status](https://travis-ci.org/initcrash/fnpp.svg?branch=master)](https://travis-ci.org/initcrash/fnpp)
