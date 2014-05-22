@@ -188,6 +188,18 @@ can_change_if_it_is_a_reference)
     EXPECT_EQ(9,i);
 }
 
+TEST(An_optional_value,
+can_be_const_itself)
+{
+    int i = 3;
+    optional<int&> const o{i};
+    EXPECT_EQ(3,o or 0);
+
+    o >>[](int i){
+        EXPECT_EQ(3,i);
+    };
+}
+
 optional<std::string> maybe_hello(int i)
 {
     if(i==1){

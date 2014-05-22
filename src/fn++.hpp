@@ -258,7 +258,7 @@ struct optional_helper
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wuninitialized"
 #endif
-    optional_helper(O const& o,typename O::Type& o_value, ValueF const& handle_value):
+    optional_helper(O const& o,typename O::Type const& o_value, ValueF const& handle_value):
         o(o),
         value(o.has_value
                 ? handle_value(const_cast<typename O::Type&>(o_value))
@@ -283,7 +283,7 @@ struct optional_helper<O,ValueF,void>
 {
     O o;
 
-    optional_helper(O const& o,typename O::Type& o_value, ValueF const& handle_value):
+    optional_helper(O const& o,typename O::Type const& o_value, ValueF const& handle_value):
         o(o)
     {
         if(o.has_value){
@@ -373,7 +373,8 @@ public:
 
     inline optional(T const& value): has_value(true), value(value){}
 
-    inline T operator||(T fallback) const
+    template<typename F>
+    inline T operator||(F&& fallback) const
     {
         return has_value ? value : fallback;
     }
@@ -403,7 +404,7 @@ public:
 
     template<typename ValueF>
     inline auto operator>>(
-        ValueF const& handle_value)
+        ValueF const& handle_value) const
     ->fn_::optional_helper<
         optional,
         ValueF,
