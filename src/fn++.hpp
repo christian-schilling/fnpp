@@ -374,7 +374,13 @@ public:
     inline optional(T const& value): has_value(true), value(value){}
 
     template<typename F>
-    inline T operator||(F&& fallback) const
+    inline typename fn_::remove_reference<T>::T operator||(F const& fallback) const
+    {
+        return has_value ? value : fallback;
+    }
+
+    template<typename F>
+    inline typename fn_::remove_reference<T>::T& operator||(F& fallback) const
     {
         return has_value ? value : fallback;
     }

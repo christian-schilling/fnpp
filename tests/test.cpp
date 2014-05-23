@@ -171,6 +171,33 @@ can_be_defaulted_to_a_constant)
 }
 
 TEST(An_optional_value,
+can_be_defaulted_to_a_reference)
+{
+    int i = 0;
+    int j = 0;
+    optional<int&> oi{i};
+
+    (oi or j) = 1;
+
+    EXPECT_EQ(1,i);
+    EXPECT_EQ(0,j);
+    EXPECT_EQ(1,oi or 2);
+
+    optional<int&> ni;
+
+    (ni or j) = 2;
+
+    EXPECT_EQ(1,i);
+    EXPECT_EQ(2,j);
+    EXPECT_EQ(3,ni or 3);
+
+    optional<int const&> ci{4};
+
+    EXPECT_EQ(4,ci or 3);
+}
+
+
+TEST(An_optional_value,
 can_change_if_it_is_a_reference)
 {
     int i = 5;
