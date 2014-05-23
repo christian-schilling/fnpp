@@ -236,6 +236,7 @@ optional<std::string> maybe_hello(int i)
         return {};
     }
 }
+
 TEST(An_optional_value,
 works_with_nontrivial_types)
 {
@@ -254,6 +255,13 @@ works_with_nontrivial_types)
             EXPECT_EQ("nothing",s);
         }
     }
+
+    std::vector<std::string> v;
+
+    auto s = [=]()->optional<std::string>{
+        return element(0).of(v);
+    }();
+    EXPECT_EQ("nothing",s or "nothing");
 }
 
 TEST(An_optional_value,

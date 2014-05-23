@@ -346,23 +346,26 @@ private:
 public:
     typedef T Type;
 
-    template<class O>
-    inline optional(optional<O> const& original):
-        has_value(original.has_value),
-        value(original.value){}
-
-    inline optional(optional const& original):
-        has_value(original.has_value),
-        value(original.value){}
-
-    inline optional(optional const&& original):
-        has_value(original.has_value),
-        value(original.value){}
-
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wuninitialized"
 #endif
+    template<class O>
+    inline optional(optional<O> const& original):
+        has_value(original.has_value),
+        value(original.has_value ? original.value : fn_::optional_ref_helper<T>::h(value))
+    {}
+
+    inline optional(optional const& original):
+        has_value(original.has_value),
+        value(original.has_value ? original.value : fn_::optional_ref_helper<T>::h(value))
+    {}
+
+    inline optional(optional const&& original):
+        has_value(original.has_value),
+        value(original.has_value ? original.value : fn_::optional_ref_helper<T>::h(value))
+    {}
+
     inline optional():
         has_value(false),
         value(fn_::optional_ref_helper<T>::h(value))
