@@ -29,8 +29,19 @@ optional<std::string> maybe_hello(int i)
     }
 }
 
+optional<int> readInt(){ return {}; }
+
+
 int main(int,char**)
 {
+    readInt() // did I get a real int ?
+    >>[](int i){ // Yes
+        std::cout << "my int is: " << i << std::endl;   // use my int
+    }
+    >>[]{ // No
+        std::cout << "I have no int" << std::endl;
+    };
+
     for(auto const i: range(5)){
         std::cout << i << " ";
 

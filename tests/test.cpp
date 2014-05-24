@@ -237,6 +237,28 @@ optional<std::string> maybe_hello(int i)
     }
 }
 
+struct NonTrivial
+{
+    static int constructed;
+    int i;
+    NonTrivial(int i): i(i) {
+        constructed++;
+    }
+};
+
+int NonTrivial::constructed = 0;
+
+optional<NonTrivial> maybe_nt(int i)
+{
+    if(i==1){
+        return {i};
+    }
+    else{
+        return {};
+    }
+}
+
+
 TEST(An_optional_value,
 works_with_nontrivial_types)
 {
@@ -262,6 +284,12 @@ works_with_nontrivial_types)
         return element(0).of(v);
     }();
     EXPECT_EQ("nothing",s or "nothing");
+
+    EXPECT_EQ(0,NonTrivial::constructed);
+    maybe_nt(0);
+    EXPECT_EQ(0,NonTrivial::constructed);
+    maybe_nt(1);
+    EXPECT_EQ(1,NonTrivial::constructed);
 }
 
 TEST(An_optional_value,
@@ -360,6 +388,79 @@ can_tested_for_equality)
         EXPECT_NE(a,b);
     }
 }
+
+TEST(A_non_const_optional,
+can_be_converted_to_a_const_one)
+{
+    optional<int> a{100};
+    optional<int const> b{a};
+
+    EXPECT_TRUE(a.has_value);
+    EXPECT_EQ(100, a or 1);
+
+    EXPECT_TRUE(b.has_value);
+    EXPECT_EQ(100, b or 1);
+}
+
+TEST(A_const_optional,
+can_be_converted_to_a_non_const_one)
+{
+    optional<int const> a{100};
+    optional<int> b{a};
+
+    EXPECT_TRUE(a.has_value);
+    EXPECT_EQ(100, a or 1);
+
+    EXPECT_TRUE(b.has_value);
+    EXPECT_EQ(100, b or 1);
+}
+
+TEST(A_non_const_optional,
+can_be_converted_to_a_optional_const_reference)
+{
+    optional<int> a{100};
+    optional<int const&> cr{a};
+
+    EXPECT_TRUE(a.has_value);
+    EXPECT_EQ(100, a or 1);
+
+    EXPECT_TRUE(cr.has_value);
+    EXPECT_EQ(100, cr or 1);
+
+    a >>[](int& v) {v = 1000;};
+    EXPECT_TRUE(cr.has_value);
+    EXPECT_EQ(1000, cr or 1);
+}
+
+TEST(A_non_const_optional,
+can_be_converted_to_a_optional_reference)
+{
+    optional<int> a{100};
+    optional<int&> r{a};
+    optional<int const&> cr{r};
+
+    EXPECT_TRUE(a.has_value);
+    EXPECT_EQ(100, a or 1);
+
+    EXPECT_TRUE(cr.has_value);
+    EXPECT_EQ(100, cr or 1);
+
+    EXPECT_TRUE(r.has_value);
+    EXPECT_EQ(100, r or 1);
+
+    a >>[](int& v) {v = 1000;};
+    EXPECT_TRUE(r.has_value);
+    EXPECT_EQ(1000, r or 1);
+    EXPECT_EQ(1000, a or 1);
+    EXPECT_EQ(1000, cr or 1);
+
+    optional<int> n{r};
+    EXPECT_EQ(1000, n or 1);
+
+    optional<int> c{cr};
+    EXPECT_EQ(1000, c or 1);
+}
+
 
 TEST(An_optional_value,
 can_be_accessed_easier_using_macros)

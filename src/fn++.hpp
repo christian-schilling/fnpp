@@ -1,6 +1,8 @@
 #ifndef _1af7690b_7fca_4464_9e14_c71bc5a29ee9
 #define _1af7690b_7fca_4464_9e14_c71bc5a29ee9
 
+#include <stdio.h>
+
 namespace fn{
 
 namespace fn_ {
@@ -249,40 +251,35 @@ template< class T > struct optional_ref_helper<T&> {static T&  h(T& t)  {return 
 template< class T > struct optional_ref_helper<T&&>{static T&& h(T&& t) {return t;}};
 
 template<typename O, typename ValueF, typename T>
-struct optional_helper
+class optional_helper
 {
     O o;
-    T value;
+    T handler_returned;
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wuninitialized"
-#endif
+public:
     optional_helper(O const& o,typename O::Type const& o_value, ValueF const& handle_value):
         o(o),
-        value(o.has_value
+        handler_returned(o.has_value
                 ? handle_value(const_cast<typename O::Type&>(o_value))
-                : fn_::optional_ref_helper<T>::h(value))
+                : fn_::optional_ref_helper<T>::h(handler_returned))
     {}
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
     template<typename EmptyF>
     auto operator>>(EmptyF const& handle_no_value) const
         ->decltype(handle_no_value())
     {
         return o.has_value
-            ? value
+            ? handler_returned
             : handle_no_value();
     }
 };
 
 template<typename O, typename ValueF>
-struct optional_helper<O,ValueF,void>
+class optional_helper<O,ValueF,void>
 {
     O o;
 
+public:
     optional_helper(O const& o,typename O::Type const& o_value, ValueF const& handle_value):
         o(o)
     {
@@ -303,10 +300,11 @@ struct optional_helper<O,ValueF,void>
 
 
 template<typename O>
-struct optional_helper<O,void,void>
+class optional_helper<O,void,void>
 {
     O o;
 
+public:
     optional_helper(O const& o):
         o(o)
     {}
@@ -321,60 +319,32 @@ struct optional_helper<O,void,void>
     }
 };
 
-}
 
 template<typename T>
-class optional
+class optional_base
 {
-    friend class optional<typename fn_::noconst<T>::T&>;
-    friend class optional<typename fn_::noconst<T>::T>;
-    friend class optional<typename fn_::noconst<
-        typename fn_::remove_reference<T>::T
-    >::T const&>;
-    friend class optional<typename fn_::noconst<
-        typename fn_::remove_reference<T>::T
-    >::T&>;
-    friend class optional<T const&>;
-    friend class optional<T const>;
-    friend class optional<T&>;
-
 public:
     bool const has_value;
-private:
-    T value;
+
+protected:
+    T& value;
+
+    template<class UR>
+    inline optional_base(bool has_value, UR&& value): has_value(has_value), value(const_cast<T&>(value))
+    {}
 
 public:
     typedef T Type;
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wuninitialized"
-#endif
-    template<class O>
-    inline optional(optional<O> const& original):
+    inline optional_base(optional_base const& original):
         has_value(original.has_value),
-        value(original.has_value ? original.value : fn_::optional_ref_helper<T>::h(value))
+        value(original.value)
     {}
 
-    inline optional(optional const& original):
+    inline optional_base(optional_base const&& original):
         has_value(original.has_value),
-        value(original.has_value ? original.value : fn_::optional_ref_helper<T>::h(value))
+        value(original.value)
     {}
-
-    inline optional(optional const&& original):
-        has_value(original.has_value),
-        value(original.has_value ? original.value : fn_::optional_ref_helper<T>::h(value))
-    {}
-
-    inline optional():
-        has_value(false),
-        value(fn_::optional_ref_helper<T>::h(value))
-    {}
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
-
-    inline optional(T const& value): has_value(true), value(value){}
 
     template<typename F>
     inline typename fn_::remove_reference<T>::T operator||(F const& fallback) const
@@ -382,31 +352,22 @@ public:
         return has_value ? value : fallback;
     }
 
-    template<typename F>
-    inline typename fn_::remove_reference<T>::T& operator||(F& fallback) const
+    inline bool operator==(T const& other_value) const
     {
-        return has_value ? value : fallback;
+        return has_value && (value == other_value);
     }
 
-    inline bool operator==(optional const& other) const
+    inline bool operator!=(T const& other_value) const
     {
-        if(has_value && other.has_value){
-            return value == other.value;
-        }
-        return false;
+        return !((*this) == other_value);
     }
 
-    typename fn_::remove_reference<T>::T operator--(int)
+    inline bool operator==(optional_base const& other) const
     {
-        if(has_value){
-            return optional<typename fn_::remove_reference<T>::T::Type>{value};
-        }
-        else{
-            return optional<typename fn_::remove_reference<T>::T::Type>{};
-        }
+        return (has_value && other.has_value) && (value == other.value);
     }
 
-    inline bool operator!=(optional const& other) const
+    inline bool operator!=(optional_base const& other) const
     {
         return !(*this == other);
     }
@@ -415,7 +376,7 @@ public:
     inline auto operator>>(
         ValueF const& handle_value) const
     ->fn_::optional_helper<
-        optional,
+        optional_base,
         ValueF,
         decltype(handle_value(const_cast<T&>(value)))
     >
@@ -424,15 +385,167 @@ public:
     }
 
     inline auto operator!()
-        ->fn_::optional_helper<optional,void,void>
+        ->fn_::optional_helper<optional_base,void,void>
     {
         return {*this};
     }
 
 #ifdef _MSC_VER
-    optional& operator=(optional&&){return *this;}
+    optional_base& operator=(optional_base&&){return *this;}
 #endif
 };
+
+template<typename T>
+class optional_value : public optional_base<T>
+{
+    using optional_base<T>::optional_base;
+
+protected:
+    union storage
+    {
+        storage() {}
+        storage(storage const& o): dummy(o.dummy) { }
+        storage(T const& value): value(value) { }
+        ~storage() {}
+        char dummy;
+        T value;
+    };
+    storage value_storage;
+
+public:
+    optional_value(T const& value):
+        optional_base<T>(true,value_storage.value),
+        value_storage(value)
+    {}
+
+    typename fn_::remove_reference<T>::T operator--(int)
+    {
+        return (*this) or typename T::Type{};
+    }
+};
+
+template<typename T>
+class optional_ref : public optional_base<T>
+{
+    using optional_base<T>::optional_base;
+
+protected:
+    using optional_base<T>::value;
+
+public:
+    using optional_base<T>::has_value;
+
+    inline optional_ref(T& value):
+        optional_base<T>(true,value)
+    {}
+
+    inline optional_ref(T&& value):
+        optional_base<T>(true,value)
+    {}
+
+    typename fn_::remove_reference<T>::T operator--(int)
+    {
+        return has_value ? value : typename T::Type{};
+    }
+
+    template<typename F>
+    inline F& operator||(F& fallback)
+    {
+        return has_value ? value : fallback;
+    }
+
+    template<typename F>
+    inline F operator||(F const& fallback) const
+    {
+        return optional_base<T>::has_value ? optional_base<T>::value : fallback;
+    }
+};
+
+}
+
+template<typename T>
+class optional final : public fn_::optional_value<T>
+{
+    using fn_::optional_value<T>::optional_value;
+    using fn_::optional_value<T>::value_storage;
+
+    friend class optional<T const>;
+    friend class optional<T const&>;
+    friend class optional<T&>;
+
+public:
+    optional():
+        fn_::optional_value<T>(false,value_storage.value)
+    {}
+
+    optional(optional<T const&> const& original):
+        optional(original.has_value,original.value)
+    {}
+
+    optional(optional<T const> const& original):
+        optional(original.has_value,original.value)
+    {}
+};
+
+template<typename T>
+class optional<T const> final : public fn_::optional_value<T const>
+{
+    using fn_::optional_value<T const>::optional_value;
+    using fn_::optional_value<T const>::value_storage;
+
+    friend class optional<T>;
+
+public:
+    optional():
+        fn_::optional_value<T const>(false,value_storage.value)
+    {}
+
+    optional(optional<T> const& original):
+        optional(original.has_value,original.value)
+    {}
+};
+
+template<typename T>
+class optional<T&> final : public fn_::optional_ref<T>
+{
+    using fn_::optional_ref<T>::optional_ref;
+    using fn_::optional_ref<T>::value;
+
+    friend class optional<T const&>;
+
+public:
+    optional():
+        fn_::optional_ref<T>(false,value)
+    {}
+
+    optional(optional<T> const& original):
+        optional(original.has_value,original.value)
+    {}
+};
+
+template<typename T>
+class optional<T const&> final : public fn_::optional_ref<T const>
+{
+    using fn_::optional_ref<T const>::optional_ref;
+    using fn_::optional_ref<T const>::value;
+
+    friend class optional<T const>;
+    friend class optional<T>;
+
+public:
+    optional():
+        fn_::optional_ref<T const>(false,value)
+    {}
+
+    optional(optional<T> const& original):
+        optional(original.has_value,original.value)
+    {}
+
+    optional(optional<T&> const& original):
+        optional(original.has_value,original.value)
+    {}
+};
+
 
 namespace fn_ {
 
