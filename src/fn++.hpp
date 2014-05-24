@@ -3,6 +3,12 @@
 
 #include <stdio.h>
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#pragma GCC diagnostic ignored "-Wuninitialized"
+#endif
+
 namespace fn{
 
 namespace fn_ {
@@ -246,41 +252,71 @@ T reduce(I const& iter, T const& neutral, F const& f)
 
 namespace fn_ {
 
-template< class T > struct optional_ref_helper     {static T   h(T&)  {return {};}};
-template< class T > struct optional_ref_helper<T&> {static T&  h(T& t)  {return t;}};
-template< class T > struct optional_ref_helper<T&&>{static T&& h(T&& t) {return t;}};
-
 template<typename O, typename ValueF, typename T>
 class optional_helper
 {
-    O o;
-    T handler_returned;
+    O const& o;
+    unsigned char mem[sizeof(T)];
 
 public:
-    optional_helper(O const& o,typename O::Type const& o_value, ValueF const& handle_value):
+    optional_helper(O const& o,
+                    typename O::Type const& o_value,
+                    ValueF const& handle_value):
+        o(o)
+    {
+        if(o.has_value){
+            new (mem) T{handle_value(const_cast<typename O::Type&>(o_value))};
+        }
+    }
+
+    ~optional_helper()
+    {
+        if(o.has_value){
+            reinterpret_cast<T*>(mem)->~T();
+        }
+    }
+
+    template<typename EmptyF>
+    auto operator>>(EmptyF const& handle_no_value)
+        ->decltype(handle_no_value())
+    {
+        return o.has_value ? *reinterpret_cast<T*>(mem) : handle_no_value();
+    }
+};
+
+template<typename O, typename ValueF, typename T>
+class optional_helper<O,ValueF,T&>
+{
+    O const& o;
+    T& value;
+
+public:
+    optional_helper(O const& o,
+                    typename O::Type const& o_value,
+                    ValueF const& handle_value):
         o(o),
-        handler_returned(o.has_value
+        value(o.has_value
                 ? handle_value(const_cast<typename O::Type&>(o_value))
-                : fn_::optional_ref_helper<T>::h(handler_returned))
+                : *&value)
     {}
 
     template<typename EmptyF>
-    auto operator>>(EmptyF const& handle_no_value) const
+    auto operator>>(EmptyF const& handle_no_value)
         ->decltype(handle_no_value())
     {
-        return o.has_value
-            ? handler_returned
-            : handle_no_value();
+        return o.has_value ? value : handle_no_value();
     }
 };
 
 template<typename O, typename ValueF>
 class optional_helper<O,ValueF,void>
 {
-    O o;
+    O const& o;
 
 public:
-    optional_helper(O const& o,typename O::Type const& o_value, ValueF const& handle_value):
+    optional_helper(O const& o,
+                    typename O::Type const& o_value,
+                    ValueF const& handle_value):
         o(o)
     {
         if(o.has_value){
@@ -302,7 +338,7 @@ public:
 template<typename O>
 class optional_helper<O,void,void>
 {
-    O o;
+    O const& o;
 
 public:
     optional_helper(O const& o):
@@ -330,7 +366,9 @@ protected:
     T& value;
 
     template<class UR>
-    inline optional_base(bool has_value, UR&& value): has_value(has_value), value(const_cast<T&>(value))
+    inline optional_base(bool has_value, UR&& value):
+        has_value(has_value),
+        value(const_cast<T&>(value))
     {}
 
 public:
@@ -347,7 +385,8 @@ public:
     {}
 
     template<typename F>
-    inline typename fn_::remove_reference<T>::T operator||(F const& fallback) const
+    inline typename fn_::remove_reference<T>::T
+    operator||(F const& fallback) const
     {
         return has_value ? value : fallback;
     }
@@ -401,22 +440,25 @@ class optional_value : public optional_base<T>
     using optional_base<T>::optional_base;
 
 protected:
-    union storage
-    {
-        storage() {}
-        storage(storage const& o): dummy(o.dummy) { }
-        storage(T const& value): value(value) { }
-        ~storage() {}
-        char dummy;
-        T value;
-    };
-    storage value_storage;
+    unsigned char value_mem[sizeof(T)];
 
 public:
-    optional_value(T const& value):
-        optional_base<T>(true,value_storage.value),
-        value_storage(value)
+    optional_value():
+        optional_base<T>(false,*reinterpret_cast<T*>(value_mem))
     {}
+
+    optional_value(T const& value):
+        optional_base<T>(true,*reinterpret_cast<T*>(value_mem))
+    {
+        new (value_mem) T{value};
+    }
+
+    ~optional_value()
+    {
+        if(optional_base<T>::has_value){
+            optional_base<T>::value.~T();
+        }
+    }
 
     typename fn_::remove_reference<T>::T operator--(int)
     {
@@ -467,7 +509,7 @@ template<typename T>
 class optional final : public fn_::optional_value<T>
 {
     using fn_::optional_value<T>::optional_value;
-    using fn_::optional_value<T>::value_storage;
+    using fn_::optional_value<T>::value_mem;
 
     friend class optional<T const>;
     friend class optional<T const&>;
@@ -475,34 +517,62 @@ class optional final : public fn_::optional_value<T>
 
 public:
     optional():
-        fn_::optional_value<T>(false,value_storage.value)
+        fn_::optional_value<T>()
     {}
+
+    optional(optional<T&> const& original):
+        fn_::optional_value<T>(original.has_value,*reinterpret_cast<T*>(value_mem))
+    {
+        if(original.has_value){
+            new (value_mem) T{original.value};
+        }
+    }
 
     optional(optional<T const&> const& original):
-        optional(original.has_value,original.value)
-    {}
+        fn_::optional_value<T>(original.has_value,*reinterpret_cast<T*>(value_mem))
+    {
+        if(original.has_value){
+            new (value_mem) T{original.value};
+        }
+    }
 
     optional(optional<T const> const& original):
-        optional(original.has_value,original.value)
-    {}
+        fn_::optional_value<T>(original.has_value,*reinterpret_cast<T*>(value_mem))
+    {
+        if(original.has_value){
+            new (value_mem) T{original.value};
+        }
+    }
 };
 
 template<typename T>
 class optional<T const> final : public fn_::optional_value<T const>
 {
     using fn_::optional_value<T const>::optional_value;
-    using fn_::optional_value<T const>::value_storage;
+    using fn_::optional_value<T const>::value_mem;
 
     friend class optional<T>;
 
 public:
     optional():
-        fn_::optional_value<T const>(false,value_storage.value)
+        fn_::optional_value<T const>()
     {}
 
     optional(optional<T> const& original):
-        optional(original.has_value,original.value)
-    {}
+        fn_::optional_value<T const>(original.has_value,*reinterpret_cast<T*>(value_mem))
+    {
+        if(original.has_value){
+            new (value_mem) T{original.value};
+        }
+    }
+
+    optional(optional<T&> const& original):
+        fn_::optional_value<T const>(original.has_value,*reinterpret_cast<T*>(value_mem))
+    {
+        if(original.has_value){
+            new (value_mem) T{original.value};
+        }
+    }
 };
 
 template<typename T>
@@ -512,6 +582,8 @@ class optional<T&> final : public fn_::optional_ref<T>
     using fn_::optional_ref<T>::value;
 
     friend class optional<T const&>;
+    friend class optional<T const>;
+    friend class optional<T>;
 
 public:
     optional():
@@ -602,5 +674,9 @@ fn_::Element<T> element(T const i)
 #define _as(X) X)
 
 #define with_(X) use_(X)_as(X)
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 #endif

@@ -240,13 +240,20 @@ optional<std::string> maybe_hello(int i)
 struct NonTrivial
 {
     static int constructed;
+    static int destructed;
     int i;
     NonTrivial(int i): i(i) {
         constructed++;
     }
+
+    ~NonTrivial()
+    {
+        destructed++;
+    }
 };
 
 int NonTrivial::constructed = 0;
+int NonTrivial::destructed = 0;
 
 optional<NonTrivial> maybe_nt(int i)
 {
@@ -290,6 +297,37 @@ works_with_nontrivial_types)
     EXPECT_EQ(0,NonTrivial::constructed);
     maybe_nt(1);
     EXPECT_EQ(1,NonTrivial::constructed);
+}
+
+TEST(Optional_handlers,
+can_return_a_reference)
+{
+    static double d = 34;
+    int i = 9;
+    optional<int&> o{i};
+
+    auto& dr = o
+    >>[&](int&)->double&{ return d; }
+    >>[&]()->double&{ return d; };
+
+    EXPECT_FLOAT_EQ(34,dr);
+    d = 100;
+    EXPECT_FLOAT_EQ(100,dr);
+}
+
+TEST(Value_optionals,
+call_the_destructor_when_destroyed)
+{
+    NonTrivial::constructed = 0;
+    NonTrivial::destructed = 0;
+    EXPECT_EQ(0,NonTrivial::constructed);
+    EXPECT_EQ(0,NonTrivial::destructed);
+    auto vo = new optional<NonTrivial>{5};
+    EXPECT_EQ(1,NonTrivial::constructed);
+    EXPECT_EQ(1,NonTrivial::destructed);
+    delete vo;
+    EXPECT_EQ(1,NonTrivial::constructed);
+    EXPECT_EQ(2,NonTrivial::destructed);
 }
 
 TEST(An_optional_value,
@@ -455,10 +493,15 @@ can_be_converted_to_a_optional_reference)
     EXPECT_EQ(1000, cr or 1);
 
     optional<int> n{r};
-    EXPECT_EQ(1000, n or 1);
-
     optional<int> c{cr};
+    optional<int const> cc{a};
+    optional<int const> ccr{r};
+    a >>[](int& v) {v = 500;};
+
+    EXPECT_EQ(1000, n or 1);
     EXPECT_EQ(1000, c or 1);
+    EXPECT_EQ(1000, cc or 1);
+    EXPECT_EQ(1000, ccr or 1);
 }
 
 
