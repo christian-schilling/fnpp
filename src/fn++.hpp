@@ -434,6 +434,19 @@ public:
         return {*this, value, handle_value};
     }
 
+    template<typename ValueF>
+    auto operator<<(
+        ValueF const& handle_value) const
+    ->decltype(handle_value(const_cast<T&>(value)))
+    {
+        if(has_value){
+            return handle_value(const_cast<T&>(value));
+        }
+        else{
+            return {};
+        }
+    }
+
     auto operator!()
         ->fn_::optional_helper<optional_base,void,void>
     {
