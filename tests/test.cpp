@@ -232,19 +232,18 @@ supports_handler_chaining)
     optional<int> i{4};
 
     auto const x = i
-    <<[](int v)->optional<int>{ return v*2; }
-    <<[](int v)->optional<int>{ return v*3; }
+    *[](int v){ return v*2; }
+    *[](int v){ return v*3; }
     >>[](int v){ return v*5; }
     >>[]{ return 1111; };
 
     EXPECT_EQ(4*2*3*5, x);
 
     auto const y = i
-    <<[](int v)->optional<int>{ return v*2; }
-    <<[](int  )->optional<int>{ return {}; }
-    <<[](int v)->optional<int>{ return v*3; }
-    >>[](int v){ return v*5; }
-    >>[]{ return 1111; };
+    *[](int v){ return v*2; }
+    /[](int  )->optional<int>{ return {}; }
+    *[](int v){ return v*3; }
+    or 1111;
 
     EXPECT_EQ(1111, y);
 }

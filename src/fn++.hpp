@@ -434,16 +434,34 @@ public:
         return {*this, value, handle_value};
     }
 
+    T operator*()
+    {
+        return (*this) or T{};
+    }
+
     template<typename ValueF>
-    auto operator<<(
+    auto operator/(
         ValueF const& handle_value) const
-    ->decltype(handle_value(const_cast<T&>(value)))
+        ->decltype(optional<decltype(*handle_value(const_cast<T&>(value)))>{})
     {
         if(has_value){
             return handle_value(const_cast<T&>(value));
         }
         else{
             return {};
+        }
+    }
+
+    template<typename ValueF>
+    auto operator*(
+        ValueF const& handle_value) const
+        ->decltype(optional<decltype(handle_value(const_cast<T&>(value)))>{})
+    {
+        if (has_value){
+            return handle_value(const_cast<T&>(value));
+        }
+        else{
+            return{};
         }
     }
 
@@ -486,10 +504,7 @@ public:
         }
     }
 
-    T operator*()
-    {
-        return (*this) or T{};
-    }
+
 
 
 };
@@ -516,12 +531,6 @@ public:
         optional_base<T>(true,value)
     {}
 
-    T operator*()
-    {
-        return (*this)
-        >>[&](T& v) { return v; }
-        >>[&]() { return T{}; };
-    }
 
     template<typename F>
     F& operator||(F& fallback)
