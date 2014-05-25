@@ -601,31 +601,32 @@ TEST(The_element_function,
 accesses_containers_with_range_checking_returning_an_optional)
 {
     std::vector<int> v{11,3,4,6,2,5};
-    int n = 0;
 
     {
         auto t = element(3).of(v);
         EXPECT_TRUE(t.has_value);
-        EXPECT_EQ(6, t or n);
+        EXPECT_EQ(6, t or 99);
+        EXPECT_EQ(6, *t);
     }
 
     {
         auto t = element(30).of(v);
         EXPECT_FALSE(t.has_value);
-        EXPECT_EQ(0, t or n);
+        EXPECT_EQ(99, t or 99);
+        EXPECT_EQ(0, *t);
     }
 
     {
         auto second = element(1);
         auto t = second.of(v);
         EXPECT_TRUE(t.has_value);
-        EXPECT_EQ(3, t or n);
+        EXPECT_EQ(3, t or 99);
     }
 
     {
         auto t = element(-1).of(v);
         EXPECT_TRUE(t.has_value);
-        EXPECT_EQ(5, t or n);
+        EXPECT_EQ(5, t or 99);
     }
 
     {
@@ -651,7 +652,7 @@ accesses_containers_with_range_checking_returning_an_optional)
     {
         auto o = element("one").in(m);
         EXPECT_TRUE(o.has_value);
-        EXPECT_EQ(1, o or n);
+        EXPECT_EQ(1, o or 99);
     }
 
     {
@@ -663,7 +664,7 @@ accesses_containers_with_range_checking_returning_an_optional)
         auto two = element("two");
         auto o = two.in(m);
         EXPECT_TRUE(o.has_value);
-        EXPECT_EQ(2, o or n);
+        EXPECT_EQ(2, o or 99);
     }
 }
 
@@ -672,15 +673,18 @@ accesses_containers_of_optionals)
 {
     std::vector<optional<int>> v{11,{},4,6,2,5};
 
-    use_(element(3).of(v)--)_as(i){
+    use_(*element(3).of(v))_as(i){
         EXPECT_EQ(6,i);
     }
     >>[]{ ADD_FAILURE(); };
 
-    use_(element(1).of(v)--)_as(i){
+    use_(*element(1).of(v))_as(i){
         (void)i;
         ADD_FAILURE();
     };
+
+    EXPECT_EQ(11, **element(0).of(v));
+    EXPECT_EQ(0, **element(1).of(v));
 
     std::map<std::string,optional<int>> m = {{
         {"one",1},
@@ -688,20 +692,20 @@ accesses_containers_of_optionals)
         {"none",{}},
     }};
 
-    use_(element("one").in(m)--)_as(i){
+    use_(*element("one").in(m))_as(i){
         EXPECT_EQ(1,i);
     }
     >>[]{ ADD_FAILURE(); };
 
-    element("one").in(m)
-    -->>[](int i){
+    *element("one").in(m)
+    >>[](int i){
         EXPECT_EQ(1,i);
     }
     >>[]{
         ADD_FAILURE();
     };
 
-    use_(element("none").in(m)--)_as(i){
+    use_(*element("none").in(m))_as(i){
         (void)i;
         ADD_FAILURE();
     };

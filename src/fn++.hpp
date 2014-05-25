@@ -473,9 +473,9 @@ public:
         }
     }
 
-    typename fn_::remove_reference<T>::T operator--(int)
+    T operator*()
     {
-        return (*this) or typename T::Type{};
+        return (*this) or T{};
     }
 
 
@@ -503,7 +503,7 @@ public:
         optional_base<T>(true,value)
     {}
 
-    typename fn_::remove_reference<T>::T operator--(int)
+    T operator*()
     {
         return (*this)
         >>[&](T& v) { return v; }
