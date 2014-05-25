@@ -371,7 +371,7 @@ private:
 
 protected:
     template<class UR>
-    inline optional_base(bool has_value, UR&& value):
+    optional_base(bool has_value, UR&& value):
         has_value(has_value),
         value(const_cast<T&>(value))
     {}
@@ -379,45 +379,45 @@ protected:
 public:
     typedef T Type;
 
-    inline optional_base(optional_base const& original):
+    optional_base(optional_base const& original):
         has_value(original.has_value),
         value(original.value)
     {}
 
-    inline optional_base(optional_base const&& original):
+    optional_base(optional_base const&& original):
         has_value(original.has_value),
         value(original.value)
     {}
 
     template<typename F>
-    inline typename fn_::remove_reference<T>::T
+    typename fn_::remove_reference<T>::T
     operator||(F const& fallback) const
     {
         return has_value ? value : fallback;
     }
 
-    inline bool operator==(T const& other_value) const
+    bool operator==(T const& other_value) const
     {
         return has_value && (value == other_value);
     }
 
-    inline bool operator!=(T const& other_value) const
+    bool operator!=(T const& other_value) const
     {
         return !((*this) == other_value);
     }
 
-    inline bool operator==(optional_base const& other) const
+    bool operator==(optional_base const& other) const
     {
         return (has_value && other.has_value) && (value == other.value);
     }
 
-    inline bool operator!=(optional_base const& other) const
+    bool operator!=(optional_base const& other) const
     {
         return !(*this == other);
     }
 
     template<typename ValueF>
-    inline auto operator>>(
+    auto operator>>(
         ValueF const& handle_value) const
     ->fn_::optional_helper<
         optional_base,
@@ -428,7 +428,7 @@ public:
         return {*this, value, handle_value};
     }
 
-    inline auto operator!()
+    auto operator!()
         ->fn_::optional_helper<optional_base,void,void>
     {
         return {*this};
@@ -474,20 +474,22 @@ public:
 template<typename T>
 class optional_ref : public optional_base<T>
 {
-    using optional_base<T>::optional_base;
-
 public:
     using optional_base<T>::has_value;
 
-    inline optional_ref():
+    optional_ref():
         optional_base<T>(false,*static_cast<T*>(nullptr))
     {}
 
-    inline optional_ref(T& value):
+    optional_ref(bool has_value,T& v):
+        optional_base<T>(has_value,v)
+    {}
+
+    optional_ref(T& value):
         optional_base<T>(true,value)
     {}
 
-    inline optional_ref(T&& value):
+    optional_ref(T&& value):
         optional_base<T>(true,value)
     {}
 
@@ -499,7 +501,7 @@ public:
     }
 
     template<typename F>
-    inline F& operator||(F& fallback)
+    F& operator||(F& fallback)
     {
         return (*this)
         >>[&](F& v)->F& { return v; }
@@ -507,7 +509,7 @@ public:
     }
 
     template<typename F>
-    inline F operator||(F const& fallback) const
+    F operator||(F const& fallback) const
     {
         return (*this)
         >>[&](F v)->F { return v; }
@@ -520,7 +522,6 @@ public:
 template<typename T>
 class optional final : public fn_::optional_value<T>
 {
-    using fn_::optional_value<T>::optional_value;
     using fn_::optional_value<T>::value_mem;
 
     friend class optional<T const>;
@@ -530,6 +531,10 @@ class optional final : public fn_::optional_value<T>
 public:
     optional():
         fn_::optional_value<T>()
+    {}
+
+    optional(T const& v):
+        fn_::optional_value<T>(v)
     {}
 
     optional(optional<T&> const& original):
@@ -556,7 +561,6 @@ public:
 template<typename T>
 class optional<T const> final : public fn_::optional_value<T const>
 {
-    using fn_::optional_value<T const>::optional_value;
     using fn_::optional_value<T const>::value_mem;
 
     friend class optional<T>;
@@ -582,8 +586,6 @@ public:
 template<typename T>
 class optional<T&> final : public fn_::optional_ref<T>
 {
-    using fn_::optional_ref<T>::optional_ref;
-
     friend class optional<T const&>;
     friend class optional<T const>;
     friend class optional<T>;
@@ -593,16 +595,18 @@ public:
         fn_::optional_ref<T>()
     {}
 
+    optional(T& v):
+        fn_::optional_ref<T>(v)
+    {}
+
     optional(optional<T> const& original):
-        optional(original.has_value,original.value)
+        fn_::optional_ref<T>(original.has_value,original.value)
     {}
 };
 
 template<typename T>
 class optional<T const&> final : public fn_::optional_ref<T const>
 {
-    using fn_::optional_ref<T const>::optional_ref;
-
     friend class optional<T const>;
     friend class optional<T>;
 
@@ -611,12 +615,16 @@ public:
         fn_::optional_ref<T const>()
     {}
 
+    optional(T const& v):
+        fn_::optional_ref<T const>(v)
+    {}
+
     optional(optional<T> const& original):
-        optional(original.has_value,original.value)
+        fn_::optional_ref<T const>(original.has_value,original.value)
     {}
 
     optional(optional<T&> const& original):
-        optional(original.has_value,original.value)
+        fn_::optional_ref<T const>(original.has_value,original.value)
     {}
 };
 
