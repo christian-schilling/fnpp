@@ -49,11 +49,10 @@ returns_an_iterator_for_all_elements_a_functor_is_true)
 TEST(The_filter_function,
 defaults_to_a_functor_thats_tests_the_truth_value_of_the_elements_themselves)
 {
-    std::vector<int> expected{1,1,1,1,1};
     auto even = [](int x){return x%2 == 0;};
     auto count = 0;
     for(auto i: filter(map(even,range(10)))){
-        EXPECT_EQ(expected[count],i) << i;
+        EXPECT_TRUE(i) << i;
         count++;
     }
     EXPECT_EQ(5,count);
@@ -310,9 +309,9 @@ can_return_a_reference)
     >>[&](int&)->double&{ return d; }
     >>[&]()->double&{ return d; };
 
-    EXPECT_FLOAT_EQ(34,dr);
+    EXPECT_DOUBLE_EQ(34,dr);
     d = 100;
-    EXPECT_FLOAT_EQ(100,dr);
+    EXPECT_DOUBLE_EQ(100,dr);
 }
 
 TEST(Value_optionals,

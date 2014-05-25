@@ -9,6 +9,12 @@
 #pragma GCC diagnostic ignored "-Wuninitialized"
 #endif
 
+#ifndef _MSC_VER
+#define FN_TYPENAME typename
+#else
+#define FN_TYPENAME
+#endif
+
 namespace fn{
 
 namespace fn_ {
@@ -23,7 +29,7 @@ template<typename B>
 struct noconst<B const&>{ typedef B T; };
 
 template<typename T>
-struct IsTrue{ bool operator()(T i)const {return static_cast<bool>(i);} };
+struct IsTrue{ bool operator()(T i)const { return !!i; } };
 
 #ifndef _MSC_VER
 template<typename T>
@@ -266,7 +272,7 @@ public:
         o(o)
     {
         o >>[&](typename O::Type const& v){
-            new (mem) T{handle_value(const_cast<typename O::Type&>(v))};
+            new (mem) T{handle_value(const_cast<FN_TYPENAME O::Type&>(v))};
         };
     }
 
@@ -442,8 +448,6 @@ public:
 template<typename T>
 class optional_value : public optional_base<T>
 {
-    using optional_base<T>::optional_base;
-
 protected:
     unsigned char value_mem[sizeof(T)];
 
@@ -458,6 +462,10 @@ public:
         new (value_mem) T{value};
     }
 
+    optional_value(bool has_value, T& v) :
+        optional_base<T>(has_value, v)
+    {}
+
     ~optional_value()
     {
         if(optional_base<T>::has_value){
@@ -469,6 +477,8 @@ public:
     {
         return (*this) or typename T::Type{};
     }
+
+
 };
 
 template<typename T>
@@ -556,6 +566,10 @@ public:
     {
         original >>[&](T const& v){ new (value_mem) T{v};};
     }
+
+#ifdef _MSC_VER
+    optional_value& operator=(optional_value&&){ return *this; }
+#endif
 };
 
 template<typename T>
@@ -672,12 +686,6 @@ fn_::Element<T> element(T const i)
 }
 
 }
-
-#ifndef _MSC_VER
-#define FN_TYPENAME typename
-#else
-#define FN_TYPENAME
-#endif
 
 #define FN_OTYPE(X) FN_TYPENAME fn::fn_::remove_reference<decltype(X)>::T::Type
 #define use_(X) X >>[&](FN_OTYPE(X)&
