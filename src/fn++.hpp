@@ -21,10 +21,10 @@ namespace fn_ {
 
 template<class F, class TT>
 static auto msvc_C1001_fix(F f,TT value)
-->decltype(f(const_cast<TT&>(value)))
+->decltype(f(value))
 {
     // TODO: when MS someday fix their compiler this can be removed
-    return f(const_cast<TT&>(value));
+    return f(value);
 }
 
 template< class R > struct remove_reference      {typedef R T;};
@@ -282,8 +282,8 @@ public:
                     ValueF const& handle_value):
         o(o)
     {
-        o >>[&](typename O::Type const& v){
-            new (mem) T{handle_value(const_cast<FN_TYPENAME O::Type&>(v))};
+        o >>[&](typename O::Type& v){
+            new (mem) T{handle_value(v)};
         };
     }
 
@@ -293,10 +293,10 @@ public:
     }
 
     template<typename EmptyF>
-    auto operator>>(EmptyF const& handle_no_value)
+    auto operator>>(EmptyF const& handle_no_value) const
         ->decltype(handle_no_value())
     {
-        return o.has_value ? *reinterpret_cast<T*>(mem) : handle_no_value();
+        return o.has_value ? *reinterpret_cast<T const*>(mem) : handle_no_value();
     }
 };
 
@@ -308,16 +308,16 @@ class optional_helper<O,ValueF,T&>
 
 public:
     optional_helper(O const& o,
-                    typename O::Type const& o_value,
+                    typename O::Type& o_value,
                     ValueF const& handle_value):
         o(o),
         value(o.has_value
-                ? handle_value(const_cast<typename O::Type&>(o_value))
+                ? handle_value(o_value)
                 : *&value)
     {}
 
     template<typename EmptyF>
-    auto operator>>(EmptyF const& handle_no_value)
+    auto operator>>(EmptyF const& handle_no_value) const
         ->decltype(handle_no_value())
     {
         return o.has_value ? value : handle_no_value();
@@ -331,12 +331,12 @@ class optional_helper<O,ValueF,void>
 
 public:
     optional_helper(O const& o,
-                    typename O::Type const& o_value,
+                    typename O::Type& o_value,
                     ValueF const& handle_value):
         o(o)
     {
         if(o.has_value){
-            handle_value(const_cast<typename O::Type&>(o_value));
+            handle_value(o_value);
         }
     }
 
@@ -394,9 +394,8 @@ protected:
     template<class UR>
     optional_base(bool has_value, UR&& value):
         has_value(has_value),
-        value(&const_cast<T&>(value))
+        value(&value)
     {}
-
 
     optional_base(optional_base const& original):
         has_value(original.has_value),
@@ -442,14 +441,14 @@ public:
     ->fn_::optional_helper<
         optional_base,
         ValueF,
-        /* decltype(handle_value(const_cast<T&>(value))) */
+        /* decltype(handle_value(value)) */
         decltype(msvc_C1001_fix(handle_value,*value))
     >
     {
         return {*this, *value, handle_value};
     }
 
-    T operator*()
+    T operator*() const
     {
         return (*this) or T{};
     }
@@ -460,7 +459,7 @@ public:
         ->decltype(optional<decltype(*msvc_C1001_fix(handle_value,*value))>{})
     {
         if(has_value){
-            return handle_value(const_cast<T&>(*value));
+            return handle_value(*value);
         }
         else{
             return {};
@@ -473,14 +472,14 @@ public:
         ->decltype(optional<decltype(msvc_C1001_fix(handle_value,*value))>{})
     {
         if (has_value){
-            return handle_value(const_cast<T&>(*value));
+            return handle_value(*value);
         }
         else{
             return{};
         }
     }
 
-    auto operator!()
+    auto operator!() const
         ->fn_::optional_helper<optional_base,void,void>
     {
         return {*this};
@@ -546,7 +545,7 @@ public:
 
 
     template<typename F>
-    F& operator||(F& fallback)
+    F& operator||(F& fallback) const
     {
         return (*this)
         >>[&](F& v)->F& { return v; }
@@ -690,7 +689,8 @@ public:
     Element(T const i): i{i} {}
 
     template<class Container>
-    auto of(Container& c) ->optional<decltype(c.at(0))>
+    auto of(Container& c) const
+        ->optional<decltype(c.at(0))>
     {
         auto const size = c.size();
         auto index = static_cast<decltype(size)>(i<0?(size+i):i);
@@ -704,7 +704,8 @@ public:
     }
 
     template<class Container>
-    auto in(Container& c) ->optional<decltype(c.at(i))>
+    auto in(Container& c) const
+        ->optional<decltype(c.at(i))>
     {
         if(c.count(i)){
             return c.at(i);
