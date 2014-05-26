@@ -490,6 +490,8 @@ public:
 template<typename T>
 class optional_value : public optional_base<T>
 {
+    using optional_base<T>::value;
+
 protected:
     unsigned char value_mem[sizeof(T)];
 
@@ -525,6 +527,8 @@ public:
 template<typename T>
 class optional_ref : public optional_base<T>
 {
+    using optional_base<T>::value;
+
 public:
     using optional_base<T>::has_value;
 
