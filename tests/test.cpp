@@ -620,7 +620,7 @@ TEST(as_range,makes_begin_end_pairs_compatible_with_range_based_for)
 }
 
 TEST(The_element_function,
-accesses_containers_with_range_checking_returning_an_optional)
+    accesses_containers_with_range_checking_returning_an_optional)
 {
     std::vector<int> v{11,3,4,6,2,5};
 
@@ -690,12 +690,46 @@ accesses_containers_with_range_checking_returning_an_optional)
     }
 }
 
+TEST(An_optional_value,
+    supports_assignment)
+{
+    int a = 0;
+    int b = 5;
+
+    std::vector<optional<int&>> v{ a, b };
+
+    use_(element(1).of(v))_as(i){
+        EXPECT_EQ(5, *i);
+        b = 6;
+        EXPECT_EQ(6, *i);
+    };
+
+    v[1] = a;
+
+    use_(element(1).of(v))_as(i){
+        EXPECT_EQ(0, *i);
+        a = 13;
+        EXPECT_EQ(13, *i);
+    };
+
+    std::vector<optional<int>> w{ 2, 3, 4, 5 };
+
+    EXPECT_EQ(3, **element(1).of(w));
+    w[1] = 50;
+    EXPECT_EQ(50, **element(1).of(w));
+
+    w[1] = w[3];
+    EXPECT_EQ(5, **element(1).of(w));
+
+    w[3] >>[](int& i){i = 99;};
+    EXPECT_EQ(99, **element(3).of(w));
+    EXPECT_EQ(5, **element(1).of(w));
+}
+
 TEST(The_element_function,
 accesses_containers_of_optionals)
 {
-    std::vector<optional<int>> v;
-    v.push_back(11);
-    v.push_back({});
+    std::vector<optional<int>> v{11,{}};
     v.push_back(4);
     v.push_back(6);
     v.push_back(2);

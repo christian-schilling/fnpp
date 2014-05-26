@@ -267,6 +267,9 @@ template<typename T> class optional;
 
 namespace fn_ {
 
+template<typename T> class optional_ref;
+template<typename T> class optional_value;
+
 template<typename O, typename ValueF, typename T>
 class optional_helper
 {
@@ -373,6 +376,8 @@ template<typename T>
 class optional_base
 {
 public:
+    typedef T Type;
+
     bool const has_value;
 
 private:
@@ -380,18 +385,18 @@ private:
     friend class optional<T const>;
     friend class optional<T&>;
     friend class optional<T>;
+    friend class optional_value<T>;
+    friend class optional_ref<T>;
 
-    T& value;
+    T* value;
 
 protected:
     template<class UR>
     optional_base(bool has_value, UR&& value):
         has_value(has_value),
-        value(const_cast<T&>(value))
+        value(&const_cast<T&>(value))
     {}
 
-public:
-    typedef T Type;
 
     optional_base(optional_base const& original):
         has_value(original.has_value),
@@ -403,16 +408,17 @@ public:
         value(original.value)
     {}
 
+public:
     template<typename F>
     typename fn_::remove_reference<T>::T
     operator||(F const& fallback) const
     {
-        return has_value ? value : fallback;
+        return has_value ? *value : fallback;
     }
 
     bool operator==(T const& other_value) const
     {
-        return has_value && (value == other_value);
+        return has_value && (*value == other_value);
     }
 
     bool operator!=(T const& other_value) const
@@ -422,7 +428,7 @@ public:
 
     bool operator==(optional_base const& other) const
     {
-        return (has_value && other.has_value) && (value == other.value);
+        return (has_value && other.has_value) && (*value == *other.value);
     }
 
     bool operator!=(optional_base const& other) const
@@ -437,10 +443,10 @@ public:
         optional_base,
         ValueF,
         /* decltype(handle_value(const_cast<T&>(value))) */
-        decltype(msvc_C1001_fix(handle_value,value))
+        decltype(msvc_C1001_fix(handle_value,*value))
     >
     {
-        return {*this, value, handle_value};
+        return {*this, *value, handle_value};
     }
 
     T operator*()
@@ -451,10 +457,10 @@ public:
     template<typename ValueF>
     auto operator/(
         ValueF const& handle_value) const
-        ->decltype(optional<decltype(*msvc_C1001_fix(handle_value,value))>{})
+        ->decltype(optional<decltype(*msvc_C1001_fix(handle_value,*value))>{})
     {
         if(has_value){
-            return handle_value(const_cast<T&>(value));
+            return handle_value(const_cast<T&>(*value));
         }
         else{
             return {};
@@ -464,10 +470,10 @@ public:
     template<typename ValueF>
     auto operator*(
         ValueF const& handle_value) const
-        ->decltype(optional<decltype(msvc_C1001_fix(handle_value,value))>{})
+        ->decltype(optional<decltype(msvc_C1001_fix(handle_value,*value))>{})
     {
         if (has_value){
-            return handle_value(const_cast<T&>(value));
+            return handle_value(const_cast<T&>(*value));
         }
         else{
             return{};
@@ -509,9 +515,11 @@ public:
         }
     }
 
-
-
-
+    optional_value& operator=(optional_value const& other)
+    {
+        *value = *other.value;
+        return *this;
+    }
 };
 
 template<typename T>
@@ -552,6 +560,12 @@ public:
         >>[&](F v)->F { return v; }
         >>[&]()->F { return fallback; };
     }
+
+    optional_ref& operator=(optional_ref const& other)
+    {
+        value = other.value;
+        return *this;
+    }
 };
 
 }
@@ -578,7 +592,7 @@ public:
         fn_::optional_value<T>(original.has_value,*reinterpret_cast<T*>(value_mem))
     {
         if(original.has_value){
-            new (value_mem) T{original.value};
+            new (value_mem) T{*original.value};
         }
     }
 
@@ -637,7 +651,7 @@ public:
     {}
 
     optional(optional<T> const& original):
-        fn_::optional_ref<T>(original.has_value,original.value)
+        fn_::optional_ref<T>(original.has_value,*original.value)
     {}
 };
 
@@ -657,11 +671,11 @@ public:
     {}
 
     optional(optional<T> const& original):
-        fn_::optional_ref<T const>(original.has_value,original.value)
+        fn_::optional_ref<T const>(original.has_value,*original.value)
     {}
 
     optional(optional<T&> const& original):
-        fn_::optional_ref<T const>(original.has_value,original.value)
+        fn_::optional_ref<T const>(original.has_value,*original.value)
     {}
 };
 
