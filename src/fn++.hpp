@@ -490,8 +490,6 @@ public:
 template<typename T>
 class optional_value : public optional_base<T>
 {
-    using optional_base<T>::value;
-
 protected:
     unsigned char value_mem[sizeof(T)];
 
@@ -519,7 +517,7 @@ public:
 
     optional_value& operator=(optional_value const& other)
     {
-        *value = *other.value;
+        *optional_base<T>::value = *other.value;
         return *this;
     }
 };
@@ -527,8 +525,6 @@ public:
 template<typename T>
 class optional_ref : public optional_base<T>
 {
-    using optional_base<T>::value;
-
 public:
     using optional_base<T>::has_value;
 
@@ -567,7 +563,7 @@ public:
 
     optional_ref& operator=(optional_ref const& other)
     {
-        value = other.value;
+        optional_base<T>::value = other.value;
         return *this;
     }
 };
