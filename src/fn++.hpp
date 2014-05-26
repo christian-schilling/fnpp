@@ -479,10 +479,6 @@ public:
     {
         return {*this};
     }
-
-#ifdef _MSC_VER
-    optional_base& operator=(optional_base&&){return *this;}
-#endif
 };
 
 template<typename T>
@@ -597,10 +593,6 @@ public:
     {
         original >>[&](T const& v){ new (value_mem) T{v};};
     }
-
-#ifdef _MSC_VER
-    optional_value& operator=(optional_value&&){ return *this; }
-#endif
 };
 
 template<typename T>

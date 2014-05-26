@@ -197,7 +197,7 @@ can_be_defaulted_to_a_reference)
 
 
 TEST(An_optional_value,
-can_change_if_it_is_a_reference)
+    can_change_if_it_is_a_reference)
 {
     int i = 5;
     int j = 7;
@@ -693,7 +693,13 @@ accesses_containers_with_range_checking_returning_an_optional)
 TEST(The_element_function,
 accesses_containers_of_optionals)
 {
-    std::vector<optional<int>> v{11,{},4,6,2,5};
+    std::vector<optional<int>> v;
+    v.push_back(11);
+    v.push_back({});
+    v.push_back(4);
+    v.push_back(6);
+    v.push_back(2);
+    v.push_back(5);
 
     use_(*element(3).of(v))_as(i){
         EXPECT_EQ(6,i);
