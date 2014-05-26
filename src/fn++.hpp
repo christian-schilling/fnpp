@@ -19,6 +19,14 @@ namespace fn{
 
 namespace fn_ {
 
+template<class F, class TT>
+static auto msvc_C1001_fix(F f,TT value)
+->decltype(f(const_cast<TT&>(value)))
+{
+    // TODO: when MS someday fix their compiler this can be removed
+    return f(const_cast<TT&>(value));
+}
+
 template< class R > struct remove_reference      {typedef R T;};
 template< class R > struct remove_reference<R&>  {typedef R T;};
 template< class R > struct remove_reference<R&&> {typedef R T;};
@@ -428,7 +436,8 @@ public:
     ->fn_::optional_helper<
         optional_base,
         ValueF,
-        decltype(handle_value(const_cast<T&>(value)))
+        /* decltype(handle_value(const_cast<T&>(value))) */
+        decltype(msvc_C1001_fix(handle_value,value))
     >
     {
         return {*this, value, handle_value};
@@ -442,7 +451,7 @@ public:
     template<typename ValueF>
     auto operator/(
         ValueF const& handle_value) const
-        ->decltype(optional<decltype(*handle_value(const_cast<T&>(value)))>{})
+        ->decltype(optional<decltype(*msvc_C1001_fix(handle_value,value))>{})
     {
         if(has_value){
             return handle_value(const_cast<T&>(value));
@@ -455,7 +464,7 @@ public:
     template<typename ValueF>
     auto operator*(
         ValueF const& handle_value) const
-        ->decltype(optional<decltype(handle_value(const_cast<T&>(value)))>{})
+        ->decltype(optional<decltype(msvc_C1001_fix(handle_value,value))>{})
     {
         if (has_value){
             return handle_value(const_cast<T&>(value));
