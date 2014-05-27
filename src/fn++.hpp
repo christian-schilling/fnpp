@@ -19,11 +19,10 @@ namespace fn{
 
 namespace fn_ {
 
-template<class F, class TT>
-static auto msvc_C1001_fix(F f,TT value)
+template<class F, class T>
+static auto return_type(F f,T value)
 ->decltype(f(value))
 {
-    // TODO: when MS someday fix their compiler this can be removed
     return f(value);
 }
 
@@ -409,8 +408,7 @@ protected:
 
 public:
     template<typename F>
-    typename fn_::remove_reference<T>::T
-    operator||(F const& fallback) const
+    T operator||(F const& fallback) const
     {
         return has_value ? *value : fallback;
     }
@@ -441,8 +439,7 @@ public:
     ->fn_::optional_helper<
         optional_base,
         ValueF,
-        /* decltype(handle_value(value)) */
-        decltype(msvc_C1001_fix(handle_value,*value))
+        decltype(return_type(handle_value,*value))
     >
     {
         return {*this, *value, handle_value};
@@ -456,7 +453,7 @@ public:
     template<typename ValueF>
     auto operator/(
         ValueF const& handle_value) const
-        ->decltype(optional<decltype(*msvc_C1001_fix(handle_value,*value))>{})
+        ->decltype(optional<decltype(*return_type(handle_value,*value))>{})
     {
         if(has_value){
             return handle_value(*value);
@@ -469,7 +466,7 @@ public:
     template<typename ValueF>
     auto operator*(
         ValueF const& handle_value) const
-        ->decltype(optional<decltype(msvc_C1001_fix(handle_value,*value))>{})
+        ->decltype(optional<decltype(return_type(handle_value,*value))>{})
     {
         if (has_value){
             return handle_value(*value);
@@ -545,19 +542,19 @@ public:
 
 
     template<typename F>
-    F& operator||(F& fallback) const
+    T& operator||(F& fallback) const
     {
         return (*this)
-        >>[&](F& v)->F& { return v; }
-        >>[&]()->F& { return fallback; };
+        >>[&](T& v)->T& { return v; }
+        >>[&]()->T& { return fallback; };
     }
 
     template<typename F>
-    F operator||(F const& fallback) const
+    T operator||(F const& fallback) const
     {
         return (*this)
-        >>[&](F v)->F { return v; }
-        >>[&]()->F { return fallback; };
+        >>[&](T v)->T { return v; }
+        >>[&]()->T { return fallback; };
     }
 
     optional_ref& operator=(optional_ref const& other)
@@ -690,7 +687,7 @@ public:
 
     template<class Container>
     auto of(Container& c) const
-        ->optional<decltype(c.at(0))>
+        ->optional<decltype(c.at(0))&>
     {
         auto const size = c.size();
         auto index = static_cast<decltype(size)>(i<0?(size+i):i);
@@ -705,7 +702,7 @@ public:
 
     template<class Container>
     auto in(Container& c) const
-        ->optional<decltype(c.at(i))>
+        ->optional<decltype(c.at(i))&>
     {
         if(c.count(i)){
             return c.at(i);
