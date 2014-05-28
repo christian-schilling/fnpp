@@ -20,6 +20,7 @@ env.Append(
         '-Wall',
         '-Wextra',
         '-Werror',
+        # '-g',
     ],
     LIBS=[
         'gtest',

@@ -31,6 +31,13 @@ template< class R > struct remove_reference      {typedef R T;};
 template< class R > struct remove_reference<R&>  {typedef R T;};
 template< class R > struct remove_reference<R&&> {typedef R T;};
 
+template <class T>
+typename remove_reference<T>::T&&
+move(T&& a)
+{
+    return ((typename remove_reference<T>::T&&)a);
+}
+
 template<typename C>
 struct noconst{ typedef C T; };
 template<typename B>
@@ -503,6 +510,13 @@ public:
         new (value_mem) T{value};
     }
 
+    optional_value(T&& value):
+        optional_base<T>(true,*reinterpret_cast<T*>(value_mem))
+        /* optional_base<T>(true,fn_::move(*reinterpret_cast<T*>(value_mem))) */
+    {
+        new (value_mem) T{fn_::move(value)};
+    }
+
     optional_value(bool has_value, T& v) :
         optional_base<T>(has_value, v)
     {}
@@ -587,6 +601,16 @@ public:
         fn_::optional_value<T>(v)
     {}
 
+    optional(T&& v):
+        fn_::optional_value<T>(fn_::move(v))
+    {}
+
+    optional(optional&& original):
+        fn_::optional_value<T>(original.has_value,*reinterpret_cast<T*>(value_mem))
+    {
+        original >>[&](T& v){ new (value_mem) T{fn_::move(v)};};
+    }
+
     optional(optional<T&> const& original):
         fn_::optional_value<T>(original.has_value,*reinterpret_cast<T*>(value_mem))
     {
@@ -606,6 +630,12 @@ public:
     {
         original >>[&](T const& v){ new (value_mem) T{v};};
     }
+
+    optional(optional<T> const& original):
+        fn_::optional_value<T>(original.has_value,*reinterpret_cast<T*>(value_mem))
+    {
+        original >>[&](T const& v){ new (value_mem) T{v};};
+    }
 };
 
 template<typename T>
@@ -619,6 +649,16 @@ public:
     optional():
         fn_::optional_value<T const>()
     {}
+
+    optional(T&& v):
+        fn_::optional_value<T const>(fn_::move(v))
+    {}
+
+    optional(optional<T>&& original):
+        fn_::optional_value<T const>(original.has_value,*reinterpret_cast<T*>(value_mem))
+    {
+        original >>[&](T& v){ new (value_mem) T{fn_::move(v)};};
+    }
 
     optional(optional<T> const& original):
         fn_::optional_value<T const>(original.has_value,*reinterpret_cast<T*>(value_mem))

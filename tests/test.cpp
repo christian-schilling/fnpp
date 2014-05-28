@@ -195,6 +195,13 @@ can_be_defaulted_to_a_reference)
     EXPECT_EQ(4,ci or 3);
 }
 
+inline extern size_t f(size_t i)
+{
+    if(i!=1){
+        return i*f(i-1);
+    }
+    return 1;
+}
 
 TEST(An_optional_value,
     can_change_if_it_is_a_reference)
@@ -258,18 +265,134 @@ optional<std::string> maybe_hello(int i)
     }
 }
 
+struct OnlyMove
+{
+    static int constructed;
+    static int destructed;
+    static int moved;
+    int i;
+
+    OnlyMove(): i{111}
+    {
+        printf("create\n");
+        constructed++;
+    }
+
+    ~OnlyMove()
+    {
+        printf("destroy %d\n",i);
+        destructed++;
+    }
+
+    OnlyMove(OnlyMove const& o) = delete;
+
+    OnlyMove(OnlyMove&& o): i{o.i}
+    {
+        moved++;
+        o.i = 999;
+        printf("move\n");
+    }
+};
+
+int OnlyMove::constructed = 0;
+int OnlyMove::destructed = 0;
+int OnlyMove::moved = 0;
+
+TEST(Optional,
+Move_Semantics)
+{
+    OnlyMove::constructed = 0;
+    OnlyMove::destructed = 0;
+    OnlyMove::moved = 0;
+
+    auto v = new optional<OnlyMove>{OnlyMove{}};
+
+    EXPECT_EQ(1,OnlyMove::constructed);
+    EXPECT_EQ(1,OnlyMove::destructed);
+    EXPECT_EQ(1,OnlyMove::moved);
+
+    *v >>[](OnlyMove& om){om.i = 123;};
+
+    EXPECT_EQ(123,*v >>[](OnlyMove& om){return om.i;} >>[]{return -1;});
+
+    EXPECT_EQ(1,OnlyMove::constructed);
+    EXPECT_EQ(1,OnlyMove::destructed);
+    EXPECT_EQ(1,OnlyMove::moved);
+
+    auto v2 = new optional<OnlyMove>{std::move(*v)};
+
+    EXPECT_EQ(1,OnlyMove::constructed);
+    EXPECT_EQ(1,OnlyMove::destructed);
+    EXPECT_EQ(2,OnlyMove::moved);
+
+    EXPECT_EQ(999,*v >>[](OnlyMove& om){return om.i;} >>[]{return -1;});
+    EXPECT_EQ(123,*v2 >>[](OnlyMove& om){return om.i;} >>[]{return -1;});
+
+    delete v;
+    delete v2;
+
+    EXPECT_EQ(1,OnlyMove::constructed);
+    EXPECT_EQ(3,OnlyMove::destructed);
+    EXPECT_EQ(2,OnlyMove::moved);
+}
+
+
+TEST(Optional,
+Move_Semantics_const)
+{
+    OnlyMove::constructed = 0;
+    OnlyMove::destructed = 0;
+    OnlyMove::moved = 0;
+
+    auto v = new optional<OnlyMove>{OnlyMove{}};
+
+    EXPECT_EQ(1,OnlyMove::constructed);
+    EXPECT_EQ(1,OnlyMove::destructed);
+    EXPECT_EQ(1,OnlyMove::moved);
+
+    *v >>[](OnlyMove& om){om.i = 123;};
+
+    EXPECT_EQ(123,*v >>[](OnlyMove& om){return om.i;} >>[]{return -1;});
+
+    EXPECT_EQ(1,OnlyMove::constructed);
+    EXPECT_EQ(1,OnlyMove::destructed);
+    EXPECT_EQ(1,OnlyMove::moved);
+
+    auto v2 = new optional<OnlyMove const>{std::move(*v)};
+
+    EXPECT_EQ(1,OnlyMove::constructed);
+    EXPECT_EQ(1,OnlyMove::destructed);
+    EXPECT_EQ(2,OnlyMove::moved);
+
+    EXPECT_EQ(999,*v >>[](OnlyMove& om){return om.i;} >>[]{return -1;});
+    EXPECT_EQ(123,*v2 >>[](OnlyMove const& om){return om.i;} >>[]{return -1;});
+
+    delete v;
+    delete v2;
+
+    EXPECT_EQ(1,OnlyMove::constructed);
+    EXPECT_EQ(3,OnlyMove::destructed);
+    EXPECT_EQ(2,OnlyMove::moved);
+}
+
 struct NonTrivial
 {
     static int constructed;
     static int destructed;
     int i;
-    NonTrivial(int i): i(i) {
+
+    NonTrivial(int const& i): i(i) {
         constructed++;
     }
 
     ~NonTrivial()
     {
         destructed++;
+    }
+
+    NonTrivial(NonTrivial const& o): i(o.i)
+    {
+        printf("copy\n");
     }
 };
 
