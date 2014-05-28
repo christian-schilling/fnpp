@@ -295,7 +295,7 @@ public:
     auto operator>>(EmptyF const& handle_no_value) const
         ->decltype(handle_no_value())
     {
-        return o.has_value ? *reinterpret_cast<T const*>(mem) : handle_no_value();
+        return o.valid() ? *reinterpret_cast<T const*>(mem) : handle_no_value();
     }
 };
 
@@ -310,7 +310,7 @@ public:
                     typename O::Type& o_value,
                     ValueF const& handle_value):
         o(o),
-        value(o.has_value
+        value(o.valid()
                 ? handle_value(o_value)
                 : *&value)
     {}
@@ -319,7 +319,7 @@ public:
     auto operator>>(EmptyF const& handle_no_value) const
         ->decltype(handle_no_value())
     {
-        return o.has_value ? value : handle_no_value();
+        return o.valid() ? value : handle_no_value();
     }
 };
 
@@ -334,7 +334,7 @@ public:
                     ValueF const& handle_value):
         o(o)
     {
-        if(o.has_value){
+        if(o.valid()){
             handle_value(o_value);
         }
     }
@@ -343,7 +343,7 @@ public:
     auto operator>>(EmptyF const& handle_no_value) const
         ->decltype(handle_no_value())
     {
-        if(!o.has_value){
+        if(!o.valid()){
             handle_no_value();
         }
     }
@@ -364,7 +364,7 @@ public:
     auto operator>>(EmptyF const& handle_no_value) const
         ->decltype(handle_no_value())
     {
-        if(!o.has_value){
+        if(!o.valid()){
             handle_no_value();
         }
     }
@@ -376,8 +376,12 @@ class optional_base
 {
 public:
     typedef T Type;
+    bool valid() const { return !!value; }
 
-    bool const has_value;
+protected:
+    optional_base(T* const p):
+        value(p)
+    {}
 
 private:
     friend class optional<T const&>;
@@ -387,35 +391,18 @@ private:
     friend class optional_value<T>;
     friend class optional_ref<T>;
 
-    T* value;
-
-protected:
-    template<class UR>
-    optional_base(bool has_value, UR&& value):
-        has_value(has_value),
-        value(&value)
-    {}
-
-    optional_base(optional_base const& original):
-        has_value(original.has_value),
-        value(original.value)
-    {}
-
-    optional_base(optional_base const&& original):
-        has_value(original.has_value),
-        value(original.value)
-    {}
+    T* value = nullptr;
 
 public:
     template<typename F>
     T operator||(F const& fallback) const
     {
-        return has_value ? *value : fallback;
+        return valid() ? *value : fallback;
     }
 
     bool operator==(T const& other_value) const
     {
-        return has_value && (*value == other_value);
+        return valid() && (*value == other_value);
     }
 
     bool operator!=(T const& other_value) const
@@ -425,7 +412,7 @@ public:
 
     bool operator==(optional_base const& other) const
     {
-        return (has_value && other.has_value) && (*value == *other.value);
+        return (valid() && other.valid()) && (*value == *other.value);
     }
 
     bool operator!=(optional_base const& other) const
@@ -455,7 +442,7 @@ public:
         ValueF const& handle_value) const
         ->decltype(optional<decltype(*return_type(handle_value,*value))>{})
     {
-        if(has_value){
+        if(valid()){
             return handle_value(*value);
         }
         else{
@@ -468,7 +455,7 @@ public:
         ValueF const& handle_value) const
         ->decltype(optional<decltype(return_type(handle_value,*value))>{})
     {
-        if (has_value){
+        if (valid()){
             return handle_value(*value);
         }
         else{
@@ -489,28 +476,22 @@ class optional_value : public optional_base<T>
 protected:
     unsigned char value_mem[sizeof(T)];
 
-public:
     optional_value():
-        optional_base<T>(false,*reinterpret_cast<T*>(value_mem))
+        optional_base<T>(nullptr)
     {}
 
-    optional_value(T const& value):
-        optional_base<T>(true,*reinterpret_cast<T*>(value_mem))
-    {
-        new (value_mem) T{value};
-    }
-
-    optional_value(bool has_value, T& v) :
-        optional_base<T>(has_value, v)
+    optional_value(T* v) :
+        optional_base<T>(v)
     {}
 
     ~optional_value()
     {
-        if(optional_base<T>::has_value){
+        if(this->valid()){
             reinterpret_cast<T*>(value_mem)->~T();
         }
     }
 
+public:
     optional_value& operator=(optional_value const& other)
     {
         *optional_base<T>::value = *other.value;
@@ -521,26 +502,20 @@ public:
 template<typename T>
 class optional_ref : public optional_base<T>
 {
-public:
-    using optional_base<T>::has_value;
-
+protected:
     optional_ref():
-        optional_base<T>(false,*static_cast<T*>(nullptr))
+        optional_base<T>(nullptr)
     {}
 
-    optional_ref(bool has_value,T& v):
-        optional_base<T>(has_value,v)
-    {}
-
-    optional_ref(T& value):
-        optional_base<T>(true,value)
+    optional_ref(T* v):
+        optional_base<T>(v)
     {}
 
     optional_ref(T&& value):
         optional_base<T>(true,value)
     {}
 
-
+public:
     template<typename F>
     T& operator||(F& fallback) const
     {
@@ -581,25 +556,31 @@ public:
     {}
 
     optional(T const& v):
-        fn_::optional_value<T>(v)
-    {}
+        fn_::optional_value<T>(reinterpret_cast<T*>(value_mem))
+    {
+        new (value_mem) T{v};
+    }
 
     optional(optional<T&> const& original):
-        fn_::optional_value<T>(original.has_value,*reinterpret_cast<T*>(value_mem))
+        fn_::optional_value<T>(original.valid()
+            ? reinterpret_cast<T*>(value_mem)
+            : nullptr)
     {
-        if(original.has_value){
-            new (value_mem) T{*original.value};
-        }
+        original >>[&](T const& v){ new (value_mem) T{v};};
     }
 
     optional(optional<T const&> const& original):
-        fn_::optional_value<T>(original.has_value,*reinterpret_cast<T*>(value_mem))
+        fn_::optional_value<T>(original.valid()
+            ? reinterpret_cast<T*>(value_mem)
+            : nullptr)
     {
         original >>[&](T const& v){ new (value_mem) T{v};};
     }
 
     optional(optional<T const> const& original):
-        fn_::optional_value<T>(original.has_value,*reinterpret_cast<T*>(value_mem))
+        fn_::optional_value<T>(original.valid()
+            ? reinterpret_cast<T*>(value_mem)
+            : nullptr)
     {
         original >>[&](T const& v){ new (value_mem) T{v};};
     }
@@ -618,13 +599,17 @@ public:
     {}
 
     optional(optional<T> const& original):
-        fn_::optional_value<T const>(original.has_value,*reinterpret_cast<T*>(value_mem))
+        fn_::optional_value<T const>(original.valid()
+            ? reinterpret_cast<T*>(value_mem)
+            : nullptr)
     {
         original >>[&](T const& v){ new (value_mem) T{v};};
     }
 
     optional(optional<T&> const& original):
-        fn_::optional_value<T const>(original.has_value,*reinterpret_cast<T*>(value_mem))
+        fn_::optional_value<T const>(original.valid()
+            ? reinterpret_cast<T*>(value_mem)
+            : nullptr)
     {
         original >>[&](T const& v){ new (value_mem) T{v};};
     }
@@ -643,11 +628,11 @@ public:
     {}
 
     optional(T& v):
-        fn_::optional_ref<T>(v)
+        fn_::optional_ref<T>(&v)
     {}
 
     optional(optional<T> const& original):
-        fn_::optional_ref<T>(original.has_value,*original.value)
+        fn_::optional_ref<T>(original.value)
     {}
 };
 
@@ -663,15 +648,15 @@ public:
     {}
 
     optional(T const& v):
-        fn_::optional_ref<T const>(v)
+        fn_::optional_ref<T const>(&v)
     {}
 
     optional(optional<T> const& original):
-        fn_::optional_ref<T const>(original.has_value,*original.value)
+        fn_::optional_ref<T const>(original.value)
     {}
 
     optional(optional<T&> const& original):
-        fn_::optional_ref<T const>(original.has_value,*original.value)
+        fn_::optional_ref<T const>(original.value)
     {}
 };
 

@@ -384,13 +384,13 @@ TEST(An_optional_value,
 can_be_tested_if_it_has_a_value)
 {
     auto t = optional<int>{1};
-    EXPECT_TRUE(t.has_value);
+    EXPECT_TRUE(t.valid());
 
     auto t0 = optional<int>{0};
-    EXPECT_TRUE(t0.has_value);
+    EXPECT_TRUE(t0.valid());
 
     auto f = optional<int>{};
-    EXPECT_FALSE(f.has_value);
+    EXPECT_FALSE(f.valid());
 }
 
 void take(optional<int> const& i)
@@ -454,10 +454,10 @@ can_be_converted_to_a_const_one)
     optional<int> a{100};
     optional<int const> b{a};
 
-    EXPECT_TRUE(a.has_value);
+    EXPECT_TRUE(a.valid());
     EXPECT_EQ(100, a or 1);
 
-    EXPECT_TRUE(b.has_value);
+    EXPECT_TRUE(b.valid());
     EXPECT_EQ(100, b or 1);
 }
 
@@ -467,10 +467,10 @@ can_be_converted_to_a_non_const_one)
     optional<int const> a{100};
     optional<int> b{a};
 
-    EXPECT_TRUE(a.has_value);
+    EXPECT_TRUE(a.valid());
     EXPECT_EQ(100, a or 1);
 
-    EXPECT_TRUE(b.has_value);
+    EXPECT_TRUE(b.valid());
     EXPECT_EQ(100, b or 1);
 }
 
@@ -480,14 +480,14 @@ can_be_converted_to_a_optional_const_reference)
     optional<int> a{100};
     optional<int const&> cr{a};
 
-    EXPECT_TRUE(a.has_value);
+    EXPECT_TRUE(a.valid());
     EXPECT_EQ(100, a or 1);
 
-    EXPECT_TRUE(cr.has_value);
+    EXPECT_TRUE(cr.valid());
     EXPECT_EQ(100, cr or 1);
 
     a >>[](int& v) {v = 1000;};
-    EXPECT_TRUE(cr.has_value);
+    EXPECT_TRUE(cr.valid());
     EXPECT_EQ(1000, cr or 1);
 }
 
@@ -498,17 +498,17 @@ can_be_converted_to_a_optional_reference)
     optional<int&> r{a};
     optional<int const&> cr{r};
 
-    EXPECT_TRUE(a.has_value);
+    EXPECT_TRUE(a.valid());
     EXPECT_EQ(100, a or 1);
 
-    EXPECT_TRUE(cr.has_value);
+    EXPECT_TRUE(cr.valid());
     EXPECT_EQ(100, cr or 1);
 
-    EXPECT_TRUE(r.has_value);
+    EXPECT_TRUE(r.valid());
     EXPECT_EQ(100, r or 1);
 
     a >>[](int& v) {v = 1000;};
-    EXPECT_TRUE(r.has_value);
+    EXPECT_TRUE(r.valid());
     EXPECT_EQ(1000, r or 1);
     EXPECT_EQ(1000, a or 1);
     EXPECT_EQ(1000, cr or 1);
@@ -626,14 +626,14 @@ TEST(The_element_function,
 
     {
         auto t = element(3).of(v);
-        EXPECT_TRUE(t.has_value);
+        EXPECT_TRUE(t.valid());
         EXPECT_EQ(6, t or 99);
         EXPECT_EQ(6, *t);
     }
 
     {
         auto t = element(30).of(v);
-        EXPECT_FALSE(t.has_value);
+        EXPECT_FALSE(t.valid());
         EXPECT_EQ(99, t or 99);
         EXPECT_EQ(0, *t);
     }
@@ -641,20 +641,20 @@ TEST(The_element_function,
     {
         auto second = element(1);
         auto t = second.of(v);
-        EXPECT_TRUE(t.has_value);
+        EXPECT_TRUE(t.valid());
         EXPECT_EQ(3, t or 99);
     }
 
     {
         auto t = element(-1).of(v);
-        EXPECT_TRUE(t.has_value);
+        EXPECT_TRUE(t.valid());
         EXPECT_EQ(5, t or 99);
     }
 
     {
         std::vector<int> w;
-        EXPECT_FALSE(element(-1).of(w).has_value);
-        EXPECT_FALSE(element(0).of(w).has_value);
+        EXPECT_FALSE(element(-1).of(w).valid());
+        EXPECT_FALSE(element(0).of(w).valid());
     }
 
     {
@@ -673,19 +673,19 @@ TEST(The_element_function,
 
     {
         auto o = element("one").in(m);
-        EXPECT_TRUE(o.has_value);
+        EXPECT_TRUE(o.valid());
         EXPECT_EQ(1, o or 99);
     }
 
     {
         auto o = element("not").in(m);
-        EXPECT_FALSE(o.has_value);
+        EXPECT_FALSE(o.valid());
     }
 
     {
         auto two = element("two");
         auto o = two.in(m);
-        EXPECT_TRUE(o.has_value);
+        EXPECT_TRUE(o.valid());
         EXPECT_EQ(2, o or 99);
     }
 }
