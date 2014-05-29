@@ -17,6 +17,8 @@
 
 namespace fn{
 
+template<typename T> class optional;
+
 namespace fn_ {
 
 template<class F, class T>
@@ -25,6 +27,16 @@ static auto return_type(F f,T value)
 {
     return f(value);
 }
+
+template<typename T>
+struct return_cast {
+    template<typename F,typename  V>
+    static optional<T> func(F&& f,V&& v) {return f(v);}
+
+    template<typename V>
+    static T value(V&& v) {return v;}
+};
+
 
 template< class R > struct remove_reference      {typedef R T;};
 template< class R > struct remove_reference<R&>  {typedef R T;};
@@ -262,114 +274,10 @@ T reduce(I const& iter, T const& neutral, F const& f)
     return v;
 }
 
-template<typename T> class optional;
-
 namespace fn_ {
 
 template<typename T> class optional_ref;
 template<typename T> class optional_value;
-
-template<typename O, typename ValueF, typename T>
-class optional_helper
-{
-    O const& o;
-    unsigned char mem[sizeof(T)];
-
-public:
-    optional_helper(O const& o,
-                    typename O::Type const&,
-                    ValueF const& handle_value):
-        o(o)
-    {
-        o >>[&](typename O::Type& v){
-            new (mem) T{handle_value(v)};
-        };
-    }
-
-    ~optional_helper()
-    {
-        o >>[&](typename O::Type const&){ reinterpret_cast<T*>(mem)->~T(); };
-    }
-
-    template<typename EmptyF>
-    auto operator>>(EmptyF const& handle_no_value) const
-        ->decltype(handle_no_value())
-    {
-        return o.valid() ? *reinterpret_cast<T const*>(mem) : handle_no_value();
-    }
-};
-
-template<typename O, typename ValueF, typename T>
-class optional_helper<O,ValueF,T&>
-{
-    O const& o;
-    T& value;
-
-public:
-    optional_helper(O const& o,
-                    typename O::Type& o_value,
-                    ValueF const& handle_value):
-        o(o),
-        value(o.valid()
-                ? handle_value(o_value)
-                : *&value)
-    {}
-
-    template<typename EmptyF>
-    auto operator>>(EmptyF const& handle_no_value) const
-        ->decltype(handle_no_value())
-    {
-        return o.valid() ? value : handle_no_value();
-    }
-};
-
-template<typename O, typename ValueF>
-class optional_helper<O,ValueF,void>
-{
-    O const& o;
-
-public:
-    optional_helper(O const& o,
-                    typename O::Type& o_value,
-                    ValueF const& handle_value):
-        o(o)
-    {
-        if(o.valid()){
-            handle_value(o_value);
-        }
-    }
-
-    template<typename EmptyF>
-    auto operator>>(EmptyF const& handle_no_value) const
-        ->decltype(handle_no_value())
-    {
-        if(!o.valid()){
-            handle_no_value();
-        }
-    }
-};
-
-
-template<typename O>
-class optional_helper<O,void,void>
-{
-    O const& o;
-
-public:
-    optional_helper(O const& o):
-        o(o)
-    {}
-
-    template<typename EmptyF>
-    auto operator>>(EmptyF const& handle_no_value) const
-        ->decltype(handle_no_value())
-    {
-        if(!o.valid()){
-            handle_no_value();
-        }
-    }
-};
-
 
 template<typename T>
 class optional_base
@@ -395,7 +303,7 @@ private:
 
 public:
     template<typename F>
-    T operator||(F const& fallback) const
+    T operator|(F fallback) const
     {
         return valid() ? *value : fallback;
     }
@@ -423,50 +331,35 @@ public:
     template<typename ValueF>
     auto operator>>(
         ValueF const& handle_value) const
-    ->fn_::optional_helper<
-        optional_base,
-        ValueF,
-        decltype(return_type(handle_value,*value))
-    >
-    {
-        return {*this, *value, handle_value};
-    }
-
-    T operator*() const
-    {
-        return (*this) or T{};
-    }
-
-    template<typename ValueF>
-    auto operator/(
-        ValueF const& handle_value) const
-        ->decltype(optional<decltype(*return_type(handle_value,*value))>{})
+        ->decltype(
+            return_cast<
+                decltype(return_type(handle_value,*value))
+            >::func(handle_value,*value)
+        )
     {
         if(valid()){
-            return handle_value(*value);
+            return return_cast<decltype(return_type(handle_value,*value))>::func(handle_value,*value);
         }
         else{
             return {};
         }
     }
 
-    template<typename ValueF>
-    auto operator*(
-        ValueF const& handle_value) const
-        ->decltype(optional<decltype(return_type(handle_value,*value))>{})
+    template<typename EmptyF>
+    auto operator||(EmptyF const& handle_no_value) const
+        ->decltype(handle_no_value())
     {
-        if (valid()){
-            return handle_value(*value);
+        if(!valid()){
+            return handle_no_value();
         }
-        else{
-            return{};
+        else {
+            return return_cast<decltype(handle_no_value())>::value(*value);
         }
     }
 
-    auto operator!() const
-        ->fn_::optional_helper<optional_base,void,void>
+    T operator~() const
     {
-        return {*this};
+        return (*this) | T{};
     }
 };
 
@@ -494,7 +387,15 @@ protected:
 public:
     optional_value& operator=(optional_value const& other)
     {
-        *optional_base<T>::value = *other.value;
+        if(other.value){
+            *optional_base<T>::value = *other.value;
+        }
+        else{
+            if(this->valid()){
+                reinterpret_cast<T*>(value_mem)->~T();
+            }
+            optional_base<T>::value = nullptr;
+        }
         return *this;
     }
 };
@@ -517,19 +418,19 @@ protected:
 
 public:
     template<typename F>
-    T& operator||(F& fallback) const
+    T& operator|(F& fallback) const
     {
         return (*this)
         >>[&](T& v)->T& { return v; }
-        >>[&]()->T& { return fallback; };
+        ||[&]()->T& { return fallback; };
     }
 
     template<typename F>
-    T operator||(F const& fallback) const
+    T operator|(F const& fallback) const
     {
         return (*this)
         >>[&](T v)->T { return v; }
-        >>[&]()->T { return fallback; };
+        ||[&]()->T { return fallback; };
     }
 
     optional_ref& operator=(optional_ref const& other)
@@ -660,8 +561,47 @@ public:
     {}
 };
 
+template<>
+class optional<void> final
+{
+    bool no_value;
+public:
+    optional(): no_value(true) {}
+    optional(bool): no_value(false) {}
+
+    template<typename EmptyF>
+    void operator||(EmptyF const& handle_no_value) const
+    {
+        if(no_value){
+            return handle_no_value();
+        }
+    }
+};
 
 namespace fn_ {
+
+template<>
+struct return_cast<void> {
+
+    template<typename F,typename  V>
+    static
+    optional<void> func(F&& f,V&& v) {f(v); return true;}
+
+    template<typename V>
+    static void value(V&&) {}
+};
+
+
+template<typename T>
+struct return_cast<optional<T>> {
+
+    template<typename F,typename  V>
+    static
+    optional<T> func(F&& f,V&& v) {return f(v);}
+
+    template<typename V>
+    static T value(V&& v) {return v;}
+};
 
 template<class T>
 class Element

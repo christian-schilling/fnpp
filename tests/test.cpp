@@ -164,7 +164,7 @@ can_be_defaulted_to_a_constant)
     std::vector<int> in{1,4,6,2,10,55};
     std::vector<int> expected{-1,8,12,-1,-1,-1};
     for(size_t i=0;i<in.size();i++){
-        auto r = twice_in_range(3,7,in[i]) or -1;
+        auto r = twice_in_range(3,7,in[i]) | -1;
         EXPECT_EQ(expected[i],r);
     }
 }
@@ -176,23 +176,23 @@ can_be_defaulted_to_a_reference)
     int j = 0;
     optional<int&> oi{i};
 
-    (oi or j) = 1;
+    (oi | j) = 1;
 
     EXPECT_EQ(1,i);
     EXPECT_EQ(0,j);
-    EXPECT_EQ(1,oi or 2);
+    EXPECT_EQ(1,oi | 2);
 
     optional<int&> ni;
 
-    (ni or j) = 2;
+    (ni | j) = 2;
 
     EXPECT_EQ(1,i);
     EXPECT_EQ(2,j);
-    EXPECT_EQ(3,ni or 3);
+    EXPECT_EQ(3,ni | 3);
 
     optional<int const&> ci{4};
 
-    EXPECT_EQ(4,ci or 3);
+    EXPECT_EQ(4,ci | 3);
 }
 
 
@@ -203,7 +203,7 @@ TEST(An_optional_value,
     int j = 7;
     optional<int&> o = i;
 
-    auto& r = o or j;
+    auto& r = o | j;
 
     EXPECT_EQ(5,r);
     r = 6;
@@ -219,7 +219,7 @@ can_be_const_itself)
 {
     int i = 3;
     optional<int&> const o{i};
-    EXPECT_EQ(3,o or 0);
+    EXPECT_EQ(3,o | 0);
 
     o >>[](int i){
         EXPECT_EQ(3,i);
@@ -229,25 +229,24 @@ can_be_const_itself)
 TEST(optional,
 supports_handler_chaining)
 {
-    optional<int> i{4};
+    optional<int> i = 4;
 
     auto const x = i
-    *[](int v){ return v*2; }
-    *[](int v){ return v*3; }
+    >>[](int v){ return v*2; }
+    >>[](int v){ return v*3; }
     >>[](int v){ return v*5; }
-    >>[]{ return 1111; };
+    ||[]{ return 1111; };
 
     EXPECT_EQ(4*2*3*5, x);
 
     auto const y = i
-    *[](int v){ return v*2; }
-    /[](int  )->optional<int>{ return {}; }
-    *[](int v){ return v*3; }
-    or 1111;
+    >>[](int v){ return v*2; }
+    >>[](int  )->optional<int>{ return {}; }
+    >>[](int v){ return v*3; }
+    | 1111;
 
     EXPECT_EQ(1111, y);
 }
-
 optional<std::string> maybe_hello(int i)
 {
     if(i==1){
@@ -294,7 +293,7 @@ works_with_nontrivial_types)
         auto s = use_(maybe_hello(i))_as(s){
             return s;
         }
-        >>[]{
+        ||[]{
             return std::string("nothing");
         };
 
@@ -311,7 +310,7 @@ works_with_nontrivial_types)
     auto s = [=]()->optional<std::string>{
         return element(0).of(v);
     }();
-    EXPECT_EQ("nothing",s or "nothing");
+    EXPECT_EQ("nothing",s | "nothing");
 
     EXPECT_EQ(0,NonTrivial::constructed);
     maybe_nt(0);
@@ -329,12 +328,43 @@ can_return_a_reference)
 
     auto& dr = o
     >>[&](int&)->double&{ return d; }
-    >>[&]()->double&{ return d; };
+    ||[&]()->double&{ return d; };
 
     EXPECT_DOUBLE_EQ(34,dr);
     d = 100;
     EXPECT_DOUBLE_EQ(100,dr);
 }
+
+
+TEST(optional,
+can_be_cleared)
+{
+    optional<int> i = 5;
+    EXPECT_EQ(5,~i);
+
+    i = {};
+    EXPECT_EQ(0,~i);
+
+    NonTrivial::constructed = 0;
+    NonTrivial::destructed = 0;
+
+    optional<NonTrivial> nt {5};
+
+    EXPECT_EQ(1,NonTrivial::constructed);
+    EXPECT_EQ(1,NonTrivial::destructed);
+
+    nt = {};
+
+    EXPECT_EQ(1,NonTrivial::constructed);
+    EXPECT_EQ(2,NonTrivial::destructed);
+
+    nt = {};
+
+    EXPECT_EQ(1,NonTrivial::constructed);
+    EXPECT_EQ(2,NonTrivial::destructed);
+}
+
+
 
 TEST(Value_optionals,
 call_the_destructor_when_destroyed)
@@ -374,7 +404,7 @@ can_be_used_by_providing_handlers_for_both_cases)
         auto result = twice_in_range(3,7,in[i]);
         auto r = result
             >>[](int v){return 2 * v; }
-            >>[]{return -1;};
+            ||[]{return -1;};
 
         EXPECT_EQ(expected[i],r);
     }
@@ -395,7 +425,7 @@ can_be_tested_if_it_has_a_value)
 
 void take(optional<int> const& i)
 {
-    EXPECT_EQ(12,i or 0);
+    EXPECT_EQ(12,i | 0);
 }
 
 TEST(An_optional_value,
@@ -403,7 +433,7 @@ can_be_passed_into_a_function)
 {
     auto r = twice_in_range(3,9,6);
     take(r);
-    EXPECT_EQ(12,r or 0);
+    EXPECT_EQ(12,r | 0);
 }
 
 optional<int> getnr(int nr)
@@ -455,10 +485,10 @@ can_be_converted_to_a_const_one)
     optional<int const> b{a};
 
     EXPECT_TRUE(a.valid());
-    EXPECT_EQ(100, a or 1);
+    EXPECT_EQ(100, a | 1);
 
     EXPECT_TRUE(b.valid());
-    EXPECT_EQ(100, b or 1);
+    EXPECT_EQ(100, b | 1);
 }
 
 TEST(A_const_optional,
@@ -468,10 +498,10 @@ can_be_converted_to_a_non_const_one)
     optional<int> b{a};
 
     EXPECT_TRUE(a.valid());
-    EXPECT_EQ(100, a or 1);
+    EXPECT_EQ(100, a | 1);
 
     EXPECT_TRUE(b.valid());
-    EXPECT_EQ(100, b or 1);
+    EXPECT_EQ(100, b | 1);
 }
 
 TEST(A_non_const_optional,
@@ -481,14 +511,14 @@ can_be_converted_to_a_optional_const_reference)
     optional<int const&> cr{a};
 
     EXPECT_TRUE(a.valid());
-    EXPECT_EQ(100, a or 1);
+    EXPECT_EQ(100, a | 1);
 
     EXPECT_TRUE(cr.valid());
-    EXPECT_EQ(100, cr or 1);
+    EXPECT_EQ(100, cr | 1);
 
     a >>[](int& v) {v = 1000;};
     EXPECT_TRUE(cr.valid());
-    EXPECT_EQ(1000, cr or 1);
+    EXPECT_EQ(1000, cr | 1);
 }
 
 TEST(A_non_const_optional,
@@ -499,19 +529,19 @@ can_be_converted_to_a_optional_reference)
     optional<int const&> cr{r};
 
     EXPECT_TRUE(a.valid());
-    EXPECT_EQ(100, a or 1);
+    EXPECT_EQ(100, a | 1);
 
     EXPECT_TRUE(cr.valid());
-    EXPECT_EQ(100, cr or 1);
+    EXPECT_EQ(100, cr | 1);
 
     EXPECT_TRUE(r.valid());
-    EXPECT_EQ(100, r or 1);
+    EXPECT_EQ(100, r | 1);
 
     a >>[](int& v) {v = 1000;};
     EXPECT_TRUE(r.valid());
-    EXPECT_EQ(1000, r or 1);
-    EXPECT_EQ(1000, a or 1);
-    EXPECT_EQ(1000, cr or 1);
+    EXPECT_EQ(1000, r | 1);
+    EXPECT_EQ(1000, a | 1);
+    EXPECT_EQ(1000, cr | 1);
 
     optional<int> n{r};
     optional<int> c{cr};
@@ -519,10 +549,10 @@ can_be_converted_to_a_optional_reference)
     optional<int const> ccr{r};
     a >>[](int& v) {v = 500;};
 
-    EXPECT_EQ(1000, n or 1);
-    EXPECT_EQ(1000, c or 1);
-    EXPECT_EQ(1000, cc or 1);
-    EXPECT_EQ(1000, ccr or 1);
+    EXPECT_EQ(1000, n | 1);
+    EXPECT_EQ(1000, c | 1);
+    EXPECT_EQ(1000, cc | 1);
+    EXPECT_EQ(1000, ccr | 1);
 }
 
 
@@ -541,7 +571,7 @@ can_be_accessed_easier_using_macros)
         else{ EXPECT_EQ(-2,out); }
 
         out = -2;
-        !nr >>[&]{
+        nr ||[&]{
             out = -1;
         };
         if(!(i%2)){ EXPECT_EQ(-2,out); }
@@ -558,7 +588,7 @@ can_be_accessed_easier_using_macros)
         use_(getnr(i))_as(nr){
             out = nr;
         }
-        >>[&]{
+        ||[&]{
             out = -1;
         };
         if(!(i%2)){ EXPECT_EQ(i,out) << i; }
@@ -582,7 +612,7 @@ work_also_with_references_to_optionals)
         else{ EXPECT_EQ(-2,out); }
 
         out = -2;
-        !nr >>[&]{
+        nr ||[&]{
             out = -1;
         };
         if(!(i%2)){ EXPECT_EQ(-2,out); }
@@ -598,7 +628,7 @@ work_also_with_references_to_optionals)
         out = use_(nr)_as(nr){
             return nr;
         }
-        >>[]{
+        ||[]{
             return -1;
         };
         if(!(i%2)){ EXPECT_EQ(i,out) << i; }
@@ -627,28 +657,28 @@ TEST(The_element_function,
     {
         auto t = element(3).of(v);
         EXPECT_TRUE(t.valid());
-        EXPECT_EQ(6, t or 99);
-        EXPECT_EQ(6, *t);
+        EXPECT_EQ(6, t | 99);
+        EXPECT_EQ(6, ~t);
     }
 
     {
         auto t = element(30).of(v);
         EXPECT_FALSE(t.valid());
-        EXPECT_EQ(99, t or 99);
-        EXPECT_EQ(0, *t);
+        EXPECT_EQ(99, t | 99);
+        EXPECT_EQ(0, ~t);
     }
 
     {
         auto second = element(1);
         auto t = second.of(v);
         EXPECT_TRUE(t.valid());
-        EXPECT_EQ(3, t or 99);
+        EXPECT_EQ(3, t | 99);
     }
 
     {
         auto t = element(-1).of(v);
         EXPECT_TRUE(t.valid());
-        EXPECT_EQ(5, t or 99);
+        EXPECT_EQ(5, t | 99);
     }
 
     {
@@ -662,7 +692,7 @@ TEST(The_element_function,
         use_(element(3).of(v))_as(i){
             i = 4;
         }
-        >>[]{ ADD_FAILURE(); };
+        ||[]{ ADD_FAILURE(); };
         EXPECT_EQ(4, v.at(3));
     }
 
@@ -674,7 +704,7 @@ TEST(The_element_function,
     {
         auto o = element("one").in(m);
         EXPECT_TRUE(o.valid());
-        EXPECT_EQ(1, o or 99);
+        EXPECT_EQ(1, o | 99);
     }
 
     {
@@ -686,7 +716,7 @@ TEST(The_element_function,
         auto two = element("two");
         auto o = two.in(m);
         EXPECT_TRUE(o.valid());
-        EXPECT_EQ(2, o or 99);
+        EXPECT_EQ(2, o | 99);
     }
 }
 
@@ -699,31 +729,31 @@ TEST(An_optional_value,
     std::vector<optional<int&>> v{ a, b };
 
     use_(element(1).of(v))_as(i){
-        EXPECT_EQ(5, *i);
+        EXPECT_EQ(5, ~i);
         b = 6;
-        EXPECT_EQ(6, *i);
+        EXPECT_EQ(6, ~i);
     };
 
     v[1] = a;
 
     use_(element(1).of(v))_as(i){
-        EXPECT_EQ(0, *i);
+        EXPECT_EQ(0, ~i);
         a = 13;
-        EXPECT_EQ(13, *i);
+        EXPECT_EQ(13, ~i);
     };
 
     std::vector<optional<int>> w{ 2, 3, 4, 5 };
 
-    EXPECT_EQ(3, **element(1).of(w));
+    EXPECT_EQ(3, ~~element(1).of(w));
     w[1] = 50;
-    EXPECT_EQ(50, **element(1).of(w));
+    EXPECT_EQ(50, ~~element(1).of(w));
 
     w[1] = w[3];
-    EXPECT_EQ(5, **element(1).of(w));
+    EXPECT_EQ(5, ~~element(1).of(w));
 
     w[3] >>[](int& i){i = 99;};
-    EXPECT_EQ(99, **element(3).of(w));
-    EXPECT_EQ(5, **element(1).of(w));
+    EXPECT_EQ(99, ~~element(3).of(w));
+    EXPECT_EQ(5, ~~element(1).of(w));
 }
 
 TEST(The_element_function,
@@ -735,18 +765,18 @@ accesses_containers_of_optionals)
     v.push_back(2);
     v.push_back(5);
 
-    use_(*element(3).of(v))_as(i){
+    use_(~element(3).of(v))_as(i){
         EXPECT_EQ(6,i);
     }
-    >>[]{ ADD_FAILURE(); };
+    ||[]{ ADD_FAILURE(); };
 
-    use_(*element(1).of(v))_as(i){
+    use_(~element(1).of(v))_as(i){
         (void)i;
         ADD_FAILURE();
     };
 
-    EXPECT_EQ(11, **element(0).of(v));
-    EXPECT_EQ(0, **element(1).of(v));
+    EXPECT_EQ(11, ~~element(0).of(v));
+    EXPECT_EQ(0, ~~element(1).of(v));
 
     std::map<std::string,optional<int>> m = {{
         {"one",1},
@@ -754,20 +784,20 @@ accesses_containers_of_optionals)
         {"none",{}},
     }};
 
-    use_(*element("one").in(m))_as(i){
+    use_(~element("one").in(m))_as(i){
         EXPECT_EQ(1,i);
     }
-    >>[]{ ADD_FAILURE(); };
+    ||[]{ ADD_FAILURE(); };
 
-    *element("one").in(m)
+    ~element("one").in(m)
     >>[](int i){
         EXPECT_EQ(1,i);
     }
-    >>[]{
+    ||[]{
         ADD_FAILURE();
     };
 
-    use_(*element("none").in(m))_as(i){
+    use_(~element("none").in(m))_as(i){
         (void)i;
         ADD_FAILURE();
     };
