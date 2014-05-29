@@ -58,15 +58,6 @@ move(T&& a)
 template<typename T>
 struct IsTrue{ bool operator()(T i)const { return !!i; } };
 
-#ifndef _MSC_VER
-template<typename T>
-constexpr bool is_void() {return false;}
-template<>
-constexpr bool is_void<void>() {return true;}
-#else
-#define or ||
-#endif
-
 template<typename T>
 class Range
 {
