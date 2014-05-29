@@ -22,7 +22,7 @@ template<typename T> class optional;
 namespace fn_ {
 
 template<class F, class T>
-static auto return_type(F f,T value)
+static auto return_type(F&& f,T&& value)
 ->decltype(f(value))
 {
     return f(value);
@@ -46,6 +46,14 @@ template<typename C>
 struct noconst{ typedef C T; };
 template<typename B>
 struct noconst<B const&>{ typedef B T; };
+
+template <class T>
+typename remove_reference<T>::T&&
+move(T&& a)
+{
+    return ((typename remove_reference<T>::T&&)a);
+}
+
 
 template<typename T>
 struct IsTrue{ bool operator()(T i)const { return !!i; } };
@@ -384,20 +392,6 @@ protected:
         }
     }
 
-public:
-    optional_value& operator=(optional_value const& other)
-    {
-        if(other.value){
-            *optional_base<T>::value = *other.value;
-        }
-        else{
-            if(this->valid()){
-                reinterpret_cast<T*>(value_mem)->~T();
-            }
-            optional_base<T>::value = nullptr;
-        }
-        return *this;
-    }
 };
 
 template<typename T>
@@ -456,6 +450,36 @@ public:
         fn_::optional_value<T>()
     {}
 
+    optional(T&& v):
+        fn_::optional_value<T>(reinterpret_cast<T*>(value_mem))
+    {
+        new (value_mem) T{fn_::move(v)};
+    }
+
+    optional(optional<T>&& original):
+        fn_::optional_value<T>(original.valid()
+            ? reinterpret_cast<T*>(value_mem)
+            : nullptr)
+    {
+        if(original.valid()){
+            new (value_mem) T{fn_::move(*original.value)};
+        }
+    }
+
+    optional& operator=(optional const& other)
+    {
+        if(other.value){
+            *fn_::optional_value<T>::value = *other.value;
+        }
+        else{
+            if(this->valid()){
+                reinterpret_cast<T*>(value_mem)->~T();
+            }
+            fn_::optional_value<T>::value = nullptr;
+        }
+        return *this;
+    }
+
     optional(T const& v):
         fn_::optional_value<T>(reinterpret_cast<T*>(value_mem))
     {
@@ -485,6 +509,15 @@ public:
     {
         original >>[&](T const& v){ new (value_mem) T{v};};
     }
+
+    optional(optional<T> const& original):
+        fn_::optional_value<T>(original.valid()
+            ? reinterpret_cast<T*>(value_mem)
+            : nullptr)
+    {
+        original >>[&](T const& v){ new (value_mem) T{v};};
+    }
+
 };
 
 template<typename T>
@@ -498,6 +531,16 @@ public:
     optional():
         fn_::optional_value<T const>()
     {}
+
+    optional(optional<T>&& original):
+        fn_::optional_value<T const>(original.valid()
+            ? reinterpret_cast<T*>(value_mem)
+            : nullptr)
+    {
+        if(original.valid()){
+            new (value_mem) T{fn_::move(*original.value)};
+        }
+    }
 
     optional(optional<T> const& original):
         fn_::optional_value<T const>(original.valid()
