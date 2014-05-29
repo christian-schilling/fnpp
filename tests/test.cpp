@@ -320,19 +320,33 @@ Move_Semantics)
 
     auto v2 = new optional<OnlyMove>{std::move(*v)};
 
+    EXPECT_FALSE(v->valid());
+    EXPECT_TRUE(v2->valid());
+
     EXPECT_EQ(1,OnlyMove::constructed);
-    EXPECT_EQ(1,OnlyMove::destructed);
+    EXPECT_EQ(2,OnlyMove::destructed);
     EXPECT_EQ(2,OnlyMove::moved);
 
-    EXPECT_EQ(999,*v >>[](OnlyMove& om){return om.i;} ||[]{return -1;});
     EXPECT_EQ(123,*v2 >>[](OnlyMove& om){return om.i;} ||[]{return -1;});
 
-    delete v;
-    delete v2;
+    auto v3 = new optional<OnlyMove const>{std::move(*v2)};
+
+    EXPECT_FALSE(v->valid());
+    EXPECT_FALSE(v2->valid());
+    EXPECT_TRUE(v3->valid());
 
     EXPECT_EQ(1,OnlyMove::constructed);
     EXPECT_EQ(3,OnlyMove::destructed);
-    EXPECT_EQ(2,OnlyMove::moved);
+    EXPECT_EQ(3,OnlyMove::moved);
+
+    EXPECT_EQ(123,*v3 >>[](OnlyMove const& om){return om.i;} ||[]{return -1;});
+    delete v;
+    delete v2;
+    delete v3;
+
+    EXPECT_EQ(1,OnlyMove::constructed);
+    EXPECT_EQ(4,OnlyMove::destructed);
+    EXPECT_EQ(3,OnlyMove::moved);
 }
 
 
@@ -360,10 +374,9 @@ Move_Semantics_const)
     auto v2 = new optional<OnlyMove const>{std::move(*v)};
 
     EXPECT_EQ(1,OnlyMove::constructed);
-    EXPECT_EQ(1,OnlyMove::destructed);
+    EXPECT_EQ(2,OnlyMove::destructed);
     EXPECT_EQ(2,OnlyMove::moved);
 
-    EXPECT_EQ(999,*v >>[](OnlyMove& om){return om.i;} ||[]{return -1;});
     EXPECT_EQ(123,*v2 >>[](OnlyMove const& om){return om.i;} ||[]{return -1;});
 
     delete v;

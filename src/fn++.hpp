@@ -454,6 +454,8 @@ public:
     {
         if(original.valid()){
             new (value_mem) T{fn_::move(*original.value)};
+            original.value = nullptr;
+            reinterpret_cast<T*>(original.value_mem)->~T();
         }
     }
 
@@ -530,6 +532,8 @@ public:
     {
         if(original.valid()){
             new (value_mem) T{fn_::move(*original.value)};
+            original.value = nullptr;
+            reinterpret_cast<T*>(value_mem)->~T();
         }
     }
 
