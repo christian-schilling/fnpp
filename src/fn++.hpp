@@ -459,6 +459,20 @@ public:
         }
     }
 
+    optional& operator=(optional&& other)
+    {
+        if(other.value){
+            *fn_::optional_value<T>::value = fn_::move(*other.value);
+        }
+        else{
+            if(this->valid()){
+                reinterpret_cast<T*>(value_mem)->~T();
+            }
+            fn_::optional_value<T>::value = nullptr;
+        }
+        return *this;
+    }
+
     optional& operator=(optional const& other)
     {
         if(other.value){
