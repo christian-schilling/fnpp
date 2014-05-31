@@ -546,6 +546,12 @@ public:
         fn_::optional_value<T const>()
     {}
 
+    optional(T const& v):
+        fn_::optional_value<T const>(reinterpret_cast<T*>(value_mem))
+    {
+        new (value_mem) T{v};
+    }
+
     optional(optional<T>&& original):
         fn_::optional_value<T const>(original.valid()
             ? reinterpret_cast<T*>(value_mem)

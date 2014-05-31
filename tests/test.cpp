@@ -167,6 +167,10 @@ can_be_defaulted_to_a_constant)
         auto r = twice_in_range(3,7,in[i]) | -1;
         EXPECT_EQ(expected[i],r);
     }
+
+    std::string const bla{"bla"};
+    optional<std::string const> i{bla};
+    EXPECT_EQ("bla",~i);
 }
 
 TEST(An_optional_value,
