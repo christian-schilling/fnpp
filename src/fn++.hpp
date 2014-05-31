@@ -1,8 +1,6 @@
 #ifndef _1af7690b_7fca_4464_9e14_c71bc5a29ee9
 #define _1af7690b_7fca_4464_9e14_c71bc5a29ee9
 
-#include <stdio.h>
-
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
