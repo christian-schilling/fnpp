@@ -348,6 +348,13 @@ public:
 template<typename T>
 class optional_value : public optional_base<T>
 {
+    friend class optional<T>;
+    friend class optional<T const>;
+    friend class optional<T const&>;
+    friend class optional<T&>;
+
+    using optional_base<T>::value;
+
 protected:
     unsigned char value_mem[sizeof(T)];
 
@@ -367,6 +374,8 @@ protected:
     }
 
 public:
+    using optional_base<T>::valid;
+
     template<typename ValueF>
     auto operator>>(
         ValueF const& handle_value) const
@@ -388,6 +397,13 @@ public:
 template<typename T>
 class optional_ref : public optional_base<T>
 {
+    friend class optional<T>;
+    friend class optional<T const>;
+    friend class optional<T const&>;
+    friend class optional<T&>;
+
+    using optional_base<T>::value;
+
 protected:
     optional_ref():
         optional_base<T>(nullptr)
@@ -431,6 +447,8 @@ public:
     }
 
 public:
+    using optional_base<T>::valid;
+
     template<typename ValueF>
     auto operator>>(
         ValueF const& handle_value) const
