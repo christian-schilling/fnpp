@@ -327,23 +327,6 @@ public:
         return !(*this == other);
     }
 
-    template<typename ValueF>
-    auto operator>>(
-        ValueF const& handle_value) const
-        ->decltype(
-            return_cast<
-                decltype(return_type(handle_value,*value))
-            >::func(handle_value,*value)
-        )
-    {
-        if(valid()){
-            return return_cast<decltype(return_type(handle_value,*value))>::func(handle_value,*value);
-        }
-        else{
-            return {};
-        }
-    }
-
     template<typename EmptyF>
     auto operator||(EmptyF const& handle_no_value) const
         ->decltype(handle_no_value())
@@ -378,11 +361,10 @@ protected:
 
     ~optional_value()
     {
-        if(this->valid()){
+        if(optional_base<T>::valid()){
             reinterpret_cast<T*>(value_mem)->~T();
         }
     }
-
 };
 
 template<typename T>
@@ -405,17 +387,23 @@ public:
     template<typename F>
     T& operator|(F& fallback) const
     {
-        return (*this)
-        >>[&](T& v)->T& { return v; }
-        ||[&]()->T& { return fallback; };
+        if(optional_base<T>::valid()){
+            return *optional_base<T>::value;
+        }
+        else{
+            return fallback;
+        }
     }
 
     template<typename F>
     T operator|(F const& fallback) const
     {
-        return (*this)
-        >>[&](T v)->T { return v; }
-        ||[&]()->T { return fallback; };
+        if(optional_base<T>::valid()){
+            return *optional_base<T>::value;
+        }
+        else{
+            return fallback;
+        }
     }
 
     optional_ref& operator=(optional_ref const& other)
@@ -465,7 +453,7 @@ public:
             *fn_::optional_value<T>::value = fn_::move(*other.value);
         }
         else{
-            if(this->valid()){
+            if(fn_::optional_value<T>::valid()){
                 reinterpret_cast<T*>(value_mem)->~T();
             }
             fn_::optional_value<T>::value = nullptr;
@@ -479,7 +467,7 @@ public:
             *fn_::optional_value<T>::value = *other.value;
         }
         else{
-            if(this->valid()){
+            if(fn_::optional_value<T>::valid()){
                 reinterpret_cast<T*>(value_mem)->~T();
             }
             fn_::optional_value<T>::value = nullptr;
@@ -525,6 +513,25 @@ public:
         original >>[&](T const& v){ new (value_mem) T{v};};
     }
 
+    template<typename ValueF>
+    auto operator>>(
+        ValueF const& handle_value) const
+        ->decltype(
+            fn_::return_cast<
+                decltype(fn_::return_type(handle_value,*fn_::optional_value<T>::value))
+            >::func(handle_value,*fn_::optional_value<T>::value)
+        )
+    {
+        if(fn_::optional_value<T>::valid()){
+            return fn_::return_cast<
+                decltype(fn_::return_type(handle_value,*fn_::optional_value<T>::value))
+            >::func(handle_value,*fn_::optional_value<T>::value);
+        }
+        else{
+            return {};
+        }
+    }
+
 };
 
 template<typename T>
@@ -566,6 +573,25 @@ public:
     {
         original >>[&](T const& v){ new (value_mem) T{v};};
     }
+    template<typename ValueF>
+    auto operator>>(
+        ValueF const& handle_value) const
+        ->decltype(
+            fn_::return_cast<
+                decltype(fn_::return_type(handle_value,*fn_::optional_value<T const>::value))
+            >::func(handle_value,*fn_::optional_value<T const>::value)
+        )
+    {
+        if(fn_::optional_value<T const>::valid()){
+            return fn_::return_cast<
+                decltype(fn_::return_type(handle_value,*fn_::optional_value<T const>::value))
+            >::func(handle_value,*fn_::optional_value<T const>::value);
+        }
+        else{
+            return {};
+        }
+    }
+
 };
 
 template<typename T>
@@ -587,6 +613,25 @@ public:
     optional(optional<T> const& original):
         fn_::optional_ref<T>(original.value)
     {}
+    template<typename ValueF>
+    auto operator>>(
+        ValueF const& handle_value) const
+        ->decltype(
+            fn_::return_cast<
+                decltype(fn_::return_type(handle_value,*fn_::optional_ref<T>::value))
+            >::func(handle_value,*fn_::optional_ref<T>::value)
+        )
+    {
+        if(fn_::optional_ref<T>::valid()){
+            return fn_::return_cast<
+                decltype(fn_::return_type(handle_value,*fn_::optional_ref<T>::value))
+            >::func(handle_value,*fn_::optional_ref<T>::value);
+        }
+        else{
+            return {};
+        }
+    }
+
 };
 
 template<typename T>
@@ -611,6 +656,25 @@ public:
     optional(optional<T&> const& original):
         fn_::optional_ref<T const>(original.value)
     {}
+    template<typename ValueF>
+    auto operator>>(
+        ValueF const& handle_value) const
+        ->decltype(
+            fn_::return_cast<
+                decltype(fn_::return_type(handle_value,*fn_::optional_ref<T const>::value))
+            >::func(handle_value,*fn_::optional_ref<T const>::value)
+        )
+    {
+        if(fn_::optional_ref<T const>::valid()){
+            return fn_::return_cast<
+                decltype(fn_::return_type(handle_value,*fn_::optional_ref<T const>::value))
+            >::func(handle_value,*fn_::optional_ref<T const>::value);
+        }
+        else{
+            return {};
+        }
+    }
+
 };
 
 template<>

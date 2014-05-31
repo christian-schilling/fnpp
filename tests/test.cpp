@@ -254,6 +254,60 @@ supports_handler_chaining)
 
     EXPECT_EQ(1111, y);
 }
+std::vector<double> f1(int i){
+    return {double(i)};
+}
+
+std::vector<double> f2(std::vector<double> v){
+    return v;
+}
+
+std::vector<double> f3()
+{
+    return {};
+}
+
+TEST(optional,
+chained_handlers_can_convert_types)
+{
+    optional<int> i = 4;
+
+    {
+        auto w = i
+            >>[](int i)->std::vector<double>{
+                return std::vector<double>{double(i)};
+            }
+        >>[](std::vector<double> v)->optional<std::vector<double>>{
+            return v;
+        }
+        ||[]{
+            return std::vector<double>{};
+        };
+
+
+        auto v = w;
+
+        ASSERT_EQ(1,v.size());
+        EXPECT_EQ(4,v.front());
+    }
+
+    {
+        auto w = i >> f1 || f3;
+        auto v = w;
+
+        ASSERT_EQ(1,v.size());
+        EXPECT_EQ(4,v.front());
+    }
+
+    {
+        auto w = i >> f1 >> f2 || f3;
+        auto v = w;
+
+        ASSERT_EQ(1,v.size());
+        EXPECT_EQ(4,v.front());
+    }
+}
+
 optional<std::string> maybe_hello(int i)
 {
     if(i==1){
