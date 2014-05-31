@@ -365,6 +365,24 @@ protected:
             reinterpret_cast<T*>(value_mem)->~T();
         }
     }
+
+public:
+    template<typename ValueF>
+    auto operator>>(
+        ValueF const& handle_value) const
+        ->decltype(
+            return_cast<
+                decltype(return_type(handle_value,*value))
+            >::func(handle_value,*value)
+        )
+    {
+        if(valid()){
+            return return_cast<decltype(return_type(handle_value,*value))>::func(handle_value,*value);
+        }
+        else{
+            return {};
+        }
+    }
 };
 
 template<typename T>
@@ -410,6 +428,24 @@ public:
     {
         optional_base<T>::value = other.value;
         return *this;
+    }
+
+public:
+    template<typename ValueF>
+    auto operator>>(
+        ValueF const& handle_value) const
+        ->decltype(
+            return_cast<
+                decltype(return_type(handle_value,*value))
+            >::func(handle_value,*value)
+        )
+    {
+        if(valid()){
+            return return_cast<decltype(return_type(handle_value,*value))>::func(handle_value,*value);
+        }
+        else{
+            return {};
+        }
     }
 };
 
@@ -512,26 +548,6 @@ public:
     {
         original >>[&](T const& v){ new (value_mem) T{v};};
     }
-
-    template<typename ValueF>
-    auto operator>>(
-        ValueF const& handle_value) const
-        ->decltype(
-            fn_::return_cast<
-                decltype(fn_::return_type(handle_value,*fn_::optional_value<T>::value))
-            >::func(handle_value,*fn_::optional_value<T>::value)
-        )
-    {
-        if(fn_::optional_value<T>::valid()){
-            return fn_::return_cast<
-                decltype(fn_::return_type(handle_value,*fn_::optional_value<T>::value))
-            >::func(handle_value,*fn_::optional_value<T>::value);
-        }
-        else{
-            return {};
-        }
-    }
-
 };
 
 template<typename T>
@@ -579,25 +595,6 @@ public:
     {
         original >>[&](T const& v){ new (value_mem) T{v};};
     }
-    template<typename ValueF>
-    auto operator>>(
-        ValueF const& handle_value) const
-        ->decltype(
-            fn_::return_cast<
-                decltype(fn_::return_type(handle_value,*fn_::optional_value<T const>::value))
-            >::func(handle_value,*fn_::optional_value<T const>::value)
-        )
-    {
-        if(fn_::optional_value<T const>::valid()){
-            return fn_::return_cast<
-                decltype(fn_::return_type(handle_value,*fn_::optional_value<T const>::value))
-            >::func(handle_value,*fn_::optional_value<T const>::value);
-        }
-        else{
-            return {};
-        }
-    }
-
 };
 
 template<typename T>
@@ -619,25 +616,6 @@ public:
     optional(optional<T> const& original):
         fn_::optional_ref<T>(original.value)
     {}
-    template<typename ValueF>
-    auto operator>>(
-        ValueF const& handle_value) const
-        ->decltype(
-            fn_::return_cast<
-                decltype(fn_::return_type(handle_value,*fn_::optional_ref<T>::value))
-            >::func(handle_value,*fn_::optional_ref<T>::value)
-        )
-    {
-        if(fn_::optional_ref<T>::valid()){
-            return fn_::return_cast<
-                decltype(fn_::return_type(handle_value,*fn_::optional_ref<T>::value))
-            >::func(handle_value,*fn_::optional_ref<T>::value);
-        }
-        else{
-            return {};
-        }
-    }
-
 };
 
 template<typename T>
@@ -662,25 +640,6 @@ public:
     optional(optional<T&> const& original):
         fn_::optional_ref<T const>(original.value)
     {}
-    template<typename ValueF>
-    auto operator>>(
-        ValueF const& handle_value) const
-        ->decltype(
-            fn_::return_cast<
-                decltype(fn_::return_type(handle_value,*fn_::optional_ref<T const>::value))
-            >::func(handle_value,*fn_::optional_ref<T const>::value)
-        )
-    {
-        if(fn_::optional_ref<T const>::valid()){
-            return fn_::return_cast<
-                decltype(fn_::return_type(handle_value,*fn_::optional_ref<T const>::value))
-            >::func(handle_value,*fn_::optional_ref<T const>::value);
-        }
-        else{
-            return {};
-        }
-    }
-
 };
 
 template<>
@@ -704,7 +663,6 @@ namespace fn_ {
 
 template<>
 struct return_cast<void> {
-
     template<typename F,typename  V>
     static
     optional<void> func(F&& f,V&& v) {f(v); return true;}
