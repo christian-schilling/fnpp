@@ -1,12 +1,10 @@
-fn++
-====
+#fn++
 
 A header that provides some helpers to enhance functional style programming in C++.
 
 [![Build Status](https://travis-ci.org/initcrash/fnpp.svg?branch=master)](https://travis-ci.org/initcrash/fnpp)
 
-Features
---------
+##Features
 * Iterator factories
     - range
     - map
@@ -19,9 +17,9 @@ Features
 * Zero dependencies
 * Tested with gcc 4.8, clang 3.4 and msvc++ 2013
 
-Usage
------
+##Usage
 
+###Iterator factories
 The iterator factories make range based for loops more expressive:
 ```C++
 for(auto i: range(10)){
@@ -34,6 +32,7 @@ for(auto i: enumerate(v)){
 }
 ```
 
+###Optional
 The optional class resembles the proposed c++17 std::optional, but in contrast
 to the std version, it does not support dereferencing and therefore never
 results in undefined behavior. Instead values can be accessed using the >> and
