@@ -7,7 +7,7 @@ A header that provides some helpers to enhance functional style programming in C
 
 Features
 --------
-* iterator factories
+* Iterator factories
     - range
     - map
     - filter
@@ -16,7 +16,8 @@ Features
 * optional<T>: like the proposed std::optional<T>, but better.
 * element(...).of(...) / element(...).in(...): range checked access to
   containers, returning optional<T> objects.
-* zero dependencies
+* Zero dependencies
+* Tested with gcc 4.8, clang 3.4 and msvc++ 2013
 
 Usage
 -----
