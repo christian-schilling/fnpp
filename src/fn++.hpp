@@ -501,8 +501,14 @@ public:
 
     optional& operator=(optional&& other)
     {
-        if(other.value){
-            *fn_::optional_value<T>::value = fn_::move(*other.value);
+        if(other.valid()){
+            if(fn_::optional_value<T>::valid()){
+                *fn_::optional_value<T>::value = fn_::move(*other.value);
+            }
+            else{
+                new (value_mem) T{fn_::move(*other.value)};
+                fn_::optional_value<T>::value = reinterpret_cast<T*>(value_mem);
+            }
         }
         else{
             if(fn_::optional_value<T>::valid()){
@@ -515,8 +521,14 @@ public:
 
     optional& operator=(optional const& other)
     {
-        if(other.value){
-            *fn_::optional_value<T>::value = *other.value;
+        if(other.valid()){
+            if(fn_::optional_value<T>::valid()){
+                *fn_::optional_value<T>::value = *other.value;
+            }
+            else{
+                new (value_mem) T{*other.value};
+                fn_::optional_value<T>::value = reinterpret_cast<T*>(value_mem);
+            }
         }
         else{
             if(fn_::optional_value<T>::valid()){

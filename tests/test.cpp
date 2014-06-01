@@ -454,6 +454,34 @@ Move_Semantics_const)
     EXPECT_EQ(2,OnlyMove::moved);
 }
 
+TEST(Optional,can_be_filled_by_assignment)
+{
+    optional<int>i;
+
+    EXPECT_FALSE(i.valid());
+    i = 5;
+    EXPECT_TRUE(i.valid());
+    EXPECT_EQ(5,~i);
+
+    int j = 7;
+    i = {};
+
+    EXPECT_FALSE(i.valid());
+    i = j;
+    EXPECT_TRUE(i.valid());
+    EXPECT_EQ(7,~i);
+
+    optional<int> k = 8;
+    i = {};
+
+    EXPECT_FALSE(i.valid());
+    i = k;
+    EXPECT_TRUE(i.valid());
+    EXPECT_EQ(8,~i);
+
+    EXPECT_EQ(8,~k);
+}
+
 struct NonTrivial
 {
     static int constructed;
