@@ -42,8 +42,12 @@ template< class R > struct remove_reference<R&&> {typedef R T;};
 
 template<typename C>
 struct noconst{ typedef C T; };
-template<typename B>
-struct noconst<B const&>{ typedef B T; };
+
+template<typename C>
+struct noconst<C const&>{ typedef C T; };
+
+template<typename C>
+struct noconst<C const>{ typedef C T; };
 
 template <class T>
 typename remove_reference<T>::T&&
@@ -148,23 +152,23 @@ class Zip
     class IT
     {
     private:
-        OtherIT1 other_it1;
-        OtherIT2 other_it2;
-        typedef typename OtherIT1::value_type const OtherVal1;
-        typedef typename OtherIT2::value_type const OtherVal2;
-        typedef PairT<OtherVal1,OtherVal2> Pair;
+        typename fn_::noconst<OtherIT1>::T other_it1;
+        typename fn_::noconst<OtherIT2>::T other_it2;
+        typedef PairT<decltype(*other_it1),decltype(*other_it2)> Pair;
 
     public:
         typedef Pair value_type;
 
         IT(OtherIT1 other_it1,OtherIT2 other_it2):
-            other_it1(other_it1),other_it2(other_it2) {}
+            other_it1(other_it1),other_it2(other_it2)
+        {}
+
         bool operator!=(IT& other){
             return (
                 (other_it1!=other.other_it1) && (other_it2 != other.other_it2)
             );
         }
-        IT const& operator++() {++other_it1;++other_it2;return *this;}
+        IT& operator++() {++other_it1;++other_it2;return *this;}
 
         Pair operator*() {
             return Pair(*other_it1,*other_it2);
@@ -175,7 +179,7 @@ class Zip
     IT const to;
 
 public:
-    Zip(A const& a, B const& b):
+    Zip(A& a, B& b):
         from(a.begin(),b.begin()), to(a.end(),b.end()) {}
     IT const& begin() const { return from; }
     IT const& end() const { return to; }
@@ -202,18 +206,18 @@ struct Pair
 };};
 
 template<template<typename,typename> class PairT=fn_::Pair, typename A,typename B>
-auto zip(A const& a,B const& b) -> fn_::Zip<PairT,A,B,
-        typename fn_::noconst<decltype(a.begin())>::T,
-        typename fn_::noconst<decltype(b.begin())>::T
+auto zip(A&& a,B&& b) -> fn_::Zip<PairT,A,B,
+        decltype(a.begin()),
+        decltype(b.begin())
     >{
     return fn_::Zip<PairT,A,B,
-        typename fn_::noconst<decltype(a.begin())>::T,
-        typename fn_::noconst<decltype(b.begin())>::T
+        decltype(a.begin()),
+        decltype(b.begin())
     >(a,b);
 }
 
 template<typename A>
-auto enumerate(A const& a)
+auto enumerate(A&& a)
      ->decltype(zip(range(-1),a))
 {
     return zip(range(-1),a);

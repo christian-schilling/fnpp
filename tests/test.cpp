@@ -112,7 +112,7 @@ allows_parallel_iteration_over_two_iterators)
 
     int count = 0;
     for(auto const& item : zip(input,range(input.size()*2))){
-        EXPECT_EQ(input[item.second],item.first);
+        EXPECT_EQ(input.at(item.second),item.first);
         count++;
     }
     EXPECT_EQ(count,input.size());
@@ -137,6 +137,21 @@ allows_iteration_with_an_index)
     }
     EXPECT_EQ(count,input.size());
 }
+
+TEST(The_enumerate_function,
+allows_changeing_the_elements)
+{
+    std::vector<int> input{23,6,0,8,0,12,4,10,0};
+
+    for(auto i : enumerate(input)){
+        i.item = i.nr*2;
+    }
+
+    for(auto const& i : enumerate(input)){
+        EXPECT_EQ(i.nr*2,i.item);
+    }
+}
+
 
 TEST(The_reduce_function,
 does_reduction)
