@@ -1,5 +1,5 @@
-#include "fn++.hpp"
 #include <stdio.h>
+#include "fn++.hpp"
 #include <vector>
 #include <map>
 #include <utility>
@@ -1048,6 +1048,109 @@ accesses_containers_of_optionals)
         ADD_FAILURE();
     };
 }
+
+TEST(The_element_function,
+creates_iterator_to_ranges)
+{
+    std::vector<int> v{11,3,4,6,2,5};
+
+    {
+        std::vector<int> out;
+        for(auto i: element(0).to_last().of(v)){
+            out.push_back(i);
+        }
+        EXPECT_EQ(v,out);
+    }
+
+    {
+        std::vector<int> out;
+        for(auto i: element(0).to(0).of(v)){
+            out.push_back(i);
+        }
+        EXPECT_EQ(v,out);
+    }
+
+    {
+        std::vector<int> out;
+        for(auto i: element(0).to(0).of(v)){
+            out.push_back(i);
+        }
+        EXPECT_EQ(v,out);
+    }
+
+    {
+        std::vector<int> e{3,4,6,2,5};
+        std::vector<int> out;
+        for(auto i: element(1).to(0).of(v)){
+            out.push_back(i);
+        }
+        EXPECT_EQ(e,out);
+    }
+
+    {
+        std::vector<int> e{3,4,6,2};
+        std::vector<int> out;
+        for(auto i: element(1).to(-1).of(v)){
+            out.push_back(i);
+        }
+        EXPECT_EQ(e,out);
+    }
+
+    {
+        std::vector<int> e{3,4,6,2};
+        std::vector<int> out;
+        for(auto i: element(1).to(-1).of(v)){
+            out.push_back(i);
+        }
+        EXPECT_EQ(e,out);
+    }
+
+    {
+        std::vector<int> e{3,4,6,2};
+        std::vector<int> out;
+        for(auto i: element(-5).to(5).of(v)){
+            out.push_back(i);
+        }
+        EXPECT_EQ(e,out);
+    }
+
+    {
+        std::vector<int> e{11,3,4,6,2};
+        std::vector<int> out;
+        for(auto i: element(-55).to(5).of(v)){
+            out.push_back(i);
+        }
+        EXPECT_EQ(e,out);
+    }
+
+    {
+        std::vector<int> e{11,3,4,6,2,5};
+        std::vector<int> out;
+        for(auto i: element(-55).to(500).of(v)){
+            out.push_back(i);
+        }
+        EXPECT_EQ(e,out);
+    }
+
+    {
+        std::vector<int> e{};
+        std::vector<int> out;
+        for(auto i: element(4).to(3).of(v)){
+            out.push_back(i);
+        }
+        EXPECT_EQ(e,out);
+    }
+
+    {
+        std::vector<int> e{11,4,2};
+        std::vector<int> out;
+        for(auto i: element(0).to_last().of(v).by(2)){
+            out.push_back(i);
+        }
+        EXPECT_EQ(e,out);
+    }
+}
+
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
