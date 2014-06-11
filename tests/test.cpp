@@ -20,6 +20,20 @@ goes_from_zero_to_the_upper_limit_not_including_the_limit)
     EXPECT_EQ(10,count);
 }
 
+TEST(A_range,
+goes_from_start_to_the_upper_limit_not_including_the_limit)
+{
+    std::vector<int> expected{5,6,7,8,9};
+    auto it = range(5,10);
+    auto count = 0;
+    for(auto i: it){
+        EXPECT_EQ(expected[count],i);
+        count++;
+    }
+    EXPECT_EQ(5,count);
+}
+
+
 TEST(The_map_function,
 applies_a_functor_to_all_elements_of_an_iterator)
 {

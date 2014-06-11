@@ -81,6 +81,7 @@ class Range
     IT const to;
 public:
     Range(T const& to): from(0), to(to) {}
+    Range(T const& from, T const& to): from(from), to(to) {}
     IT const& begin()const { return from; }
     IT const& end()const { return to; }
 };};
