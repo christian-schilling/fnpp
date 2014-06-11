@@ -832,7 +832,7 @@ public:
 
     template<class Container>
     auto in(Container& c) const
-        ->optional<decltype(c.at(i))&>
+        ->optional<decltype(c.at(i))>
     {
         if(c.count(i)){
             return c.at(i);
