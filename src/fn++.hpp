@@ -745,9 +745,9 @@ class Element
         IT const& operator++() {position+=step;return *this;}
 
         auto operator*() const
-        ->decltype(container.at(position))
+        ->decltype(container[position])
         {
-            return container.at(position);
+            return container[position];
         }
     };
 
@@ -806,12 +806,12 @@ public:
 
     template<class Container>
     auto of(Container& c) const
-        ->optional<decltype(c.at(0))&>
+        ->optional<decltype(c[0])&>
     {
         auto const size = c.size();
         auto index = get_index(size);
         if(index < size){
-            return c.at(index);
+            return c[index];
         }
         else{
             return {};
@@ -832,10 +832,10 @@ public:
 
     template<class Container>
     auto in(Container& c) const
-        ->optional<decltype(c.at(i))&>
+        ->optional<decltype(c[i])&>
     {
         if(c.count(i)){
-            return c.at(i);
+            return c[i];
         }
         else{
             return {};
