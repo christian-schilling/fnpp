@@ -95,3 +95,44 @@ If T is default constructible there is another shortcut:
 ```C++
 auto int_or_0 = ~maybe_int() // same as: maybe_int() | 0
 ```
+
+###Element
+
+The element function creates optionals while accessing containers:
+```C++
+std::vector<int> v = {1,2,3};
+optional<int&> i = element(1).of(v); // i refs 2
+i = element(5).of(v);                // i refs nothing
+i = element(-1).of(v);               // i refs 3
+
+std::map<std::string,int> m = {{"one":1},{"two":2}}
+i = element("one").in(m);            // i refs 1
+i = element("three").in(m);          // i refs nothing
+```
+
+When used with a container of optionals the tilde shotcut becomes very usefull:
+```C++
+std::vector<optional<int>> v = {1,3,5,{},4};
+auto o = element(2).of(v); // Type of o is optional<optional<int&>>
+auto i = ~element(2).of(v);// Type of i is optional<int&>
+```
+
+Additionally it allows easy iteration over parts of a container:
+```C++
+std::vector<int> v = {1,2,3,4,5};
+for(auto& i: element(2).to_last().of(v)){
+    // i refs 3,4,5
+}
+for(auto& i: element(2).to(4).of(v)){
+    // i refs 2,3
+}
+for(auto& i: element(-4).to(-1).of(v)){
+    // i refs 2,3,4
+}
+for(auto& i: element(1).to(-1).of(v).by(2)){
+    // i refs 1,3
+}
+for(auto& i: element(3).to(1).of(v)){
+    // no iterations
+}
+```
