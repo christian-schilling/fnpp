@@ -155,7 +155,14 @@ class Zip
     private:
         typename fn_::noconst<OtherIT1>::T other_it1;
         typename fn_::noconst<OtherIT2>::T other_it2;
+#ifndef _MSC_VER
         typedef PairT<decltype(*other_it1),decltype(*other_it2)> Pair;
+#else
+        typedef PairT<
+            typename fn_::noconst<OtherIT1>::T::value_type const&,
+            typename fn_::noconst<OtherIT2>::T::value_type const&
+        > Pair;
+#endif
 
     public:
         typedef Pair value_type;
@@ -489,7 +496,7 @@ public:
     optional(T&& v):
         fn_::optional_value<T>(reinterpret_cast<T*>(value_mem))
     {
-        new (value_mem) T{fn_::move(v)};
+        new (value_mem) T(fn_::move(v));
     }
 
     optional(optional<T>&& original):
@@ -511,7 +518,7 @@ public:
                 *fn_::optional_value<T>::value = fn_::move(*other.value);
             }
             else{
-                new (value_mem) T{fn_::move(*other.value)};
+                new (value_mem) T(fn_::move(*other.value));
                 fn_::optional_value<T>::value = reinterpret_cast<T*>(value_mem);
             }
         }
@@ -579,7 +586,7 @@ public:
             ? reinterpret_cast<T*>(value_mem)
             : nullptr)
     {
-        original >>[&](T const& v){ new (value_mem) T{v};};
+        original >>[&](T const& v){ new (value_mem) T(v);};
     }
 };
 
@@ -807,7 +814,7 @@ public:
 
     template<class Container>
     auto of(Container& c) const
-        ->optional<decltype(c[0])&>
+        ->optional<decltype(c[0])>
     {
         auto const size = c.size();
         auto index = get_index(size);
