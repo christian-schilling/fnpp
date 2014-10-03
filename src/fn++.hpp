@@ -19,36 +19,23 @@ template<typename T> class optional;
 
 namespace fn_ {
 
-template<class F, class T>
-static auto return_type(F&& f,T&& value)
-->decltype(f(value))
-{
-    return f(value);
-}
+/*
+ *  remove reference from a type, similar to std::remove_reference
+ */
+template<class R> struct remove_reference      {typedef R T;};
+template<class R> struct remove_reference<R&>  {typedef R T;};
+template<class R> struct remove_reference<R&&> {typedef R T;};
 
-template<typename T>
-struct return_cast {
-    template<typename F,typename  V>
-    static optional<T> func(F&& f,V&& v) {return f(v);}
+/*
+ *  remove const from a type
+ */
+template<typename C> struct noconst{ typedef C T; };
+template<typename C> struct noconst<C const&>{ typedef C T; };
+template<typename C> struct noconst<C const>{ typedef C T; };
 
-    template<typename V>
-    static T value(V&& v) {return v;}
-};
-
-
-template< class R > struct remove_reference      {typedef R T;};
-template< class R > struct remove_reference<R&>  {typedef R T;};
-template< class R > struct remove_reference<R&&> {typedef R T;};
-
-template<typename C>
-struct noconst{ typedef C T; };
-
-template<typename C>
-struct noconst<C const&>{ typedef C T; };
-
-template<typename C>
-struct noconst<C const>{ typedef C T; };
-
+/*
+ *  cast to rvalue reference, similar to std::move
+ */
 template <class T>
 typename remove_reference<T>::T&&
 move(T&& a)
@@ -57,9 +44,9 @@ move(T&& a)
 }
 
 
-template<typename T>
-struct IsTrue{ bool operator()(T i)const { return !!i; } };
-
+/*
+ * Iterator factory for iteration over ranges of values
+ */
 template<typename T>
 class Range
 {
@@ -67,11 +54,32 @@ class Range
     {
     public:
         typedef T value_type;
-        IT(T const& position): position(position) {}
-        IT(T const& position, T const& step): position(position),step(step) {}
-        bool operator!=(IT const& other)const {return position!=other.position;}
-        IT const& operator++() {position+=step;return *this;}
-        T const& operator*()const {return position;}
+
+        IT(T const& position):
+            position(position)
+        {}
+
+        IT(T const& position, T const& step):
+            position(position),
+            step(step)
+        {}
+
+        bool operator!=(IT const& other) const
+        {
+            return position != other.position;
+        }
+
+        IT const& operator++()
+        {
+            position += step;
+            return *this;
+        }
+
+        T const& operator*() const
+        {
+            return position;
+        }
+
     private:
         T position;
         T step = 1;
@@ -79,19 +87,34 @@ class Range
 
     IT from;
     IT const to;
+
 public:
-    Range(T const& to): from(0), to(to) {}
-    Range(T const& from, T const& to): from(from), to(to) {}
-    IT const& begin()const { return from; }
-    IT const& end()const { return to; }
-};};
+    Range(T const& to):
+        from(0),
+        to(to)
+    {}
 
-template<typename T,typename ...Args>
-auto range(T const& t,Args const& ...args) -> fn_::Range<T>{
-    return fn_::Range<T>(t,args...);
-}
+    Range(T const& from, T const& to):
+        from(from),
+        to(to)
+    {}
 
-namespace fn_ {
+    IT const& begin() const
+    {
+        return from;
+    }
+
+    IT const& end() const
+    {
+        return to;
+    }
+};
+
+
+/*
+ * Factory to create an iterator that applies a function to every
+ * element of an other iterator.
+ */
 template<typename FN,typename G, typename OtherIT>
 class Map
 {
@@ -100,29 +123,53 @@ class Map
     private:
         FN const& fn;
         OtherIT other_it;
+
     public:
-        IT(FN fn,OtherIT other_it): fn(fn), other_it(other_it) {}
-        bool operator!=(IT& other){return other_it!=other.other_it;}
-        IT const& operator++() {++other_it;return *this;}
-        auto operator*()const -> decltype(fn(*other_it)) { return fn(*other_it); }
+        IT(FN fn,OtherIT other_it):
+            fn(fn),
+            other_it(other_it)
+        {}
+
+        bool operator!=(IT& other)
+        {
+            return other_it != other.other_it;
+        }
+
+        IT const& operator++()
+        {
+            ++other_it;
+            return *this;
+        }
+
+        auto operator*() const -> decltype(fn(*other_it))
+        {
+            return fn(*other_it);
+        }
     };
 
     IT const from;
     IT const to;
 
 public:
-    Map(FN fn, G const& g): from(fn,g.begin()), to(fn,g.end()) {}
-    IT const& begin() const { return from; }
-    IT const& end() const { return to; }
-};};
+    Map(FN fn, G const& g):
+        from(fn,g.begin()),
+        to(fn,g.end())
+    {}
 
-template<typename FN,typename G>
-auto map(FN const& fn,G const& g) -> fn_::Map<FN,G,
-    typename fn_::noconst<decltype(g.begin())>::T>{
-    return fn_::Map<FN,G,typename fn_::noconst<decltype(g.begin())>::T>(fn,g);
-}
+    IT const& begin() const
+    {
+        return from;
+    }
 
-namespace fn_ {
+    IT const& end() const
+    {
+        return to;
+    }
+};
+
+/*
+ * Makes begin/end iterator pairs usable with range based for
+ */
 template<typename OtherIT>
 class AsRange
 {
@@ -130,17 +177,28 @@ class AsRange
     OtherIT const to;
 
 public:
-    AsRange(OtherIT from, OtherIT to): from(from), to(to) {}
-    OtherIT const& begin() const { return from; }
-    OtherIT const& end() const { return to; }
-};};
+    AsRange(OtherIT from, OtherIT to):
+        from(from),
+        to(to)
+    {}
 
-template<typename OtherIT>
-auto as_range(OtherIT const& b, OtherIT const& e) -> fn_::AsRange<OtherIT>{
-    return fn_::AsRange<OtherIT>(b,e);
-}
+    OtherIT const& begin() const
+    {
+        return from;
+    }
 
-namespace fn_ {
+    OtherIT const& end() const
+    {
+        return to;
+    }
+};
+
+/*
+ * Creates an iterator that allows simultaneous iteration
+ * over two other iterators.
+ * The iteration will terminate if either of the two input
+ * iterators end.
+ */
 template<
     template<typename,typename> class PairT,
     typename A,
@@ -164,12 +222,18 @@ class Zip
             other_it1(other_it1),other_it2(other_it2)
         {}
 
-        bool operator!=(IT& other){
-            return (
-                (other_it1!=other.other_it1) && (other_it2 != other.other_it2)
-            );
+        bool operator!=(IT& other)
+        {
+            return other_it1!=other.other_it1
+                && other_it2 != other.other_it2;
         }
-        IT& operator++() {++other_it1;++other_it2;return *this;}
+
+        IT& operator++()
+        {
+            ++other_it1;
+            ++other_it2;
+            return *this;
+        }
 
         Pair operator*() {
             return Pair(*other_it1,*other_it2);
@@ -181,12 +245,27 @@ class Zip
 
 public:
     Zip(A& a, B& b):
-        from(a.begin(),b.begin()), to(a.end(),b.end()) {}
-    IT const& begin() const { return from; }
-    IT const& end() const { return to; }
-};};
+        from(a.begin(),b.begin()),
+        to(a.end(),b.end())
+    {}
 
-namespace fn_ {
+    IT const& begin() const
+    {
+        return from;
+    }
+
+    IT const& end() const
+    {
+        return to;
+    }
+};
+
+
+/*
+ * The value type used by Zip.
+ * It aliases the first and second element to a few
+ * other names that make more sense depending on context.
+ */
 template<typename A, typename B>
 struct Pair
 {
@@ -204,27 +283,13 @@ struct Pair
 
     A& nr;
     B& item;
-};};
+};
 
-template<template<typename,typename> class PairT=fn_::Pair, typename A,typename B>
-auto zip(A&& a,B&& b) -> fn_::Zip<PairT,A,B,
-        decltype(a.begin()),
-        decltype(b.begin())
-    >{
-    return fn_::Zip<PairT,A,B,
-        decltype(a.begin()),
-        decltype(b.begin())
-    >(a,b);
-}
-
-template<typename A>
-auto enumerate(A&& a)
-     ->decltype(zip(range(-1),a))
-{
-    return zip(range(-1),a);
-}
-
-namespace fn_ {
+/*
+ * Creates an iterator that only iterates over only those
+ * elements of another iterator, that match a condition supplied
+ * as a function.
+ */
 template<typename FN,typename G, typename OtherIT>
 class Filter
 {
@@ -234,52 +299,77 @@ class Filter
         FN const& fn;
         OtherIT other_it;
     public:
-        IT(FN fn,OtherIT other_it): fn(fn), other_it(other_it){}
-        bool operator!=(IT& other){
-            while(other_it!=other.other_it && !fn(*other_it)){ ++other_it; }
-            return other_it!=other.other_it;
+        IT(FN fn,OtherIT other_it):
+            fn(fn),
+            other_it(other_it)
+        {}
+
+        bool operator!=(IT& other)
+        {
+            while(other_it!=other.other_it && !fn(*other_it)){
+                ++other_it;
+            }
+            return other_it != other.other_it;
         }
-        IT const& operator++() { ++other_it; return *this; }
-        auto operator*()const -> decltype(*other_it) { return *other_it; }
+
+        IT const& operator++()
+        {
+            ++other_it;
+            return *this;
+        }
+
+        auto operator*() const -> decltype(*other_it)
+        {
+            return *other_it;
+        }
     };
 
     IT const from;
     IT const to;
 
 public:
-    Filter(FN fn, G const& g): from(fn,g.begin()), to(fn,g.end()) {}
-    IT const& begin() const { return from; }
-    IT const& end() const { return to; }
-};};
+    Filter(FN fn, G const& g):
+        from(fn,g.begin()),
+        to(fn,g.end())
+    {}
 
-template<typename FN,typename G>
-auto filter(FN const& fn,G const& g) -> fn_::Filter<FN,G,
-    typename fn_::noconst<decltype(g.begin())>::T>
-{
-    return fn_::Filter<FN,G,typename fn_::noconst<decltype(g.begin())>::T>(fn,g);
-}
-
-template<typename G>
-auto filter(G const& g)
-     -> decltype(filter(fn_::IsTrue<decltype(*g.begin())>{},(*g.begin(),g)))
-{
-    return filter(fn_::IsTrue<decltype(*g.begin())>{},g);
-}
-
-template<typename I,typename T, typename F>
-T reduce(I const& iter, T const& neutral, F const& f)
-{
-    T v = neutral;
-    for(auto const& x: iter){
-        v = f(v,x);
+    IT const& begin() const
+    {
+        return from;
     }
-    return v;
-}
 
-namespace fn_ {
+    IT const& end() const
+    {
+        return to;
+    }
+};
+
+template<typename T>
+struct IsTrue
+{
+    bool operator()(T i) const
+    {
+        return !!i;
+    }
+};
+
 
 template<typename T> class optional_ref;
 template<typename T> class optional_value;
+
+template<typename T> struct return_cast;
+
+/*
+ *  This helper allows for easier usage of a functions return type
+ *  in a type deduction context.
+ *  Additionally it works around a strange msvc internal compiler error.
+ */
+template<class F, class T>
+static auto return_type(F&& f,T&& value)->decltype(f(value))
+{
+    return f(value);
+}
+
 
 template<typename T>
 class optional_base
@@ -380,8 +470,7 @@ public:
     using optional_base<T>::valid;
 
     template<typename ValueF>
-    auto operator>>(
-        ValueF const& handle_value) const
+    auto operator>>(ValueF const& handle_value) const
         ->decltype(
             return_cast<
                 decltype(return_type(handle_value,*value))
@@ -389,7 +478,9 @@ public:
         )
     {
         if(valid()){
-            return return_cast<decltype(return_type(handle_value,*value))>::func(handle_value,*value);
+            return return_cast<
+                decltype(return_type(handle_value,*value))
+            >::func(handle_value,*value);
         }
         else{
             return {};
@@ -462,7 +553,9 @@ public:
         )
     {
         if(valid()){
-            return return_cast<decltype(return_type(handle_value,*value))>::func(handle_value,*value);
+            return return_cast<
+                decltype(return_type(handle_value,*value))
+            >::func(handle_value,*value);
         }
         else{
             return {};
@@ -493,9 +586,11 @@ public:
     }
 
     optional(optional<T>&& original):
-        fn_::optional_value<T>(original.valid()
-            ? reinterpret_cast<T*>(value_mem)
-            : nullptr)
+        fn_::optional_value<T>(
+            original.valid()
+                ? reinterpret_cast<T*>(value_mem)
+                : nullptr
+        )
     {
         if(original.valid()){
             new (value_mem) T{fn_::move(*original.value)};
@@ -551,9 +646,11 @@ public:
     }
 
     optional(optional<T&> const& original):
-        fn_::optional_value<T>(original.valid()
-            ? reinterpret_cast<T*>(value_mem)
-            : nullptr)
+        fn_::optional_value<T>(
+            original.valid()
+                ? reinterpret_cast<T*>(value_mem)
+                : nullptr
+        )
     {
         original >>[&](T const& v){ new (value_mem) T{v};};
     }
@@ -694,6 +791,21 @@ public:
 
 namespace fn_ {
 
+/*
+ *  Convert a functions return value to an optional.
+ *  This is needed for optional handler chaining.
+ *  In particular a specialization is implemented that
+ *  avoids getting optional<optional<T>>.
+ */
+template<typename T>
+struct return_cast {
+    template<typename F,typename  V>
+    static optional<T> func(F&& f,V&& v) {return f(v);}
+
+    template<typename V>
+    static T value(V&& v) {return v;}
+};
+
 template<>
 struct return_cast<void> {
     template<typename F,typename  V>
@@ -703,7 +815,6 @@ struct return_cast<void> {
     template<typename V>
     static void value(V&&) {}
 };
-
 
 template<typename T>
 struct return_cast<optional<T>> {
@@ -741,12 +852,19 @@ class Element
             step(step)
         {}
 
-        bool operator!=(IT const& other)const {return position<other.position;}
+        bool operator!=(IT const& other) const
+        {
+            return position < other.position;
+        }
 
-        IT const& operator++() {position+=step;return *this;}
+        IT const& operator++()
+        {
+            position += step;
+            return *this;
+        }
 
         auto operator*() const
-        ->decltype(container[position])
+            ->decltype(container[position])
         {
             return container[position];
         }
@@ -758,15 +876,21 @@ class Element
         IT<Container> from;
         IT<Container> const to;
         int step = 1;
+
     public:
         Range(Container& c, T const& from, T const& to):
             from(c,from),
             to(c,to)
         {}
 
-        Range(Range const& o, IT<Container> from): from(from), to(o.to), step(step) {}
-        IT<Container> const& begin()const { return from; }
-        IT<Container> const& end()const { return to; }
+        Range(Range const& o, IT<Container> from):
+            from(from),
+            to(o.to),
+            step(step)
+        {}
+
+        IT<Container> const& begin() const { return from; }
+        IT<Container> const& end() const { return to; }
 
         Range by(int step)
         {
@@ -779,8 +903,14 @@ class Element
         Element from;
         Element to{0};
     public:
-        UpperLimit(Element const from, Element const to): from(from), to(to) {}
-        UpperLimit(Element const from): from(from){}
+        UpperLimit(Element const from, Element const to):
+            from(from),
+            to(to)
+        {}
+
+        UpperLimit(Element const from):
+            from(from)
+        {}
 
         template<class Container>
         auto of(Container& c) const
@@ -788,10 +918,19 @@ class Element
         {
             auto const size = c.size();
             auto index = from.get_index(size);
-            if(index > size) {index = 0;}
+            if(index > size){
+                index = 0;
+            }
+
             auto limit = to.i ? to.get_index(size) : size;
-            if(limit > size) {limit = size;}
-            if(limit < index){ limit = index = 0; }
+            if(limit > size){
+                limit = size;
+            }
+
+            if(limit < index){
+                limit = index = 0;
+            }
+
             return Range<Container>(c,index,limit);
         }
     };
@@ -811,12 +950,14 @@ public:
     {
         auto const size = c.size();
         auto index = get_index(size);
+
         if(index < size){
             return c[index];
         }
         else{
             return {};
         }
+
         (void)c.back(); // protect against using with std::map
     }
 
@@ -845,18 +986,92 @@ public:
 };
 }
 
+/*
+ * The following functions allow instantiation of the above classes,
+ * without explicitly specifying the template arguments.
+ * This is necessary, because function templates support
+ * automatic type deduction by parameter type, while classes do not.
+ */
+template<typename T,typename ...Args>
+auto range(T const& t,Args const& ...args) -> fn_::Range<T>
+{
+    return fn_::Range<T>(t,args...);
+}
+
+template<typename FN,typename G>
+auto map(FN const& fn,G const& g)
+    ->fn_::Map<FN,G,typename fn_::noconst<decltype(g.begin())>::T>
+{
+    return fn_::Map<FN,G,typename fn_::noconst<decltype(g.begin())>::T>(fn,g);
+}
+
+template<typename OtherIT>
+auto as_range(OtherIT const& b, OtherIT const& e) -> fn_::AsRange<OtherIT>
+{
+    return fn_::AsRange<OtherIT>(b,e);
+}
+
+template<
+    template<typename,typename> class PairT=fn_::Pair,
+    typename A,
+    typename B
+>
+auto zip(A&& a,B&& b)
+    -> fn_::Zip<PairT,A,B, decltype(a.begin()), decltype(b.begin())>
+{
+    return fn_::Zip<PairT,A,B, decltype(a.begin()), decltype(b.begin())>(a,b);
+}
+
+template<typename A>
+auto enumerate(A&& a) -> decltype(zip(range(-1),a))
+{
+    return zip(range(-1),a);
+}
+
+template<typename FN,typename G>
+auto filter(FN const& fn,G const& g)
+    ->fn_::Filter<FN,G, typename fn_::noconst<decltype(g.begin())>::T>
+{
+    return fn_::Filter<FN,G,typename fn_::noconst<decltype(g.begin())>::T>(fn,g);
+}
+
+template<typename G>
+auto filter(G const& g)
+    ->decltype(filter(fn_::IsTrue<decltype(*g.begin())>{},(*g.begin(),g)))
+{
+    return filter(fn_::IsTrue<decltype(*g.begin())>{},g);
+}
+
 template<class T>
 fn_::Element<T> element(T const i)
 {
     return fn_::Element<T>(i);
 }
 
+/*
+ * Reduction is so simple, it does not need a helper class
+ */
+template<typename I,typename T, typename F>
+T reduce(I const& iter, T const& neutral, F const& f)
+{
+    T v = neutral;
+    for(auto const& x: iter){
+        v = f(v,x);
+    }
+    return v;
 }
 
+
+}
+
+/*
+ * Some macros to make optional<T> usable with complex types.
+ * As soon as generic lambdas can be used (C++14), these won't be
+ * necessary anymore, and should not be used from that point onwards.
+ */
 #define FN_OTYPE(X) FN_TYPENAME fn::fn_::remove_reference<decltype(X)>::T::Type
 #define use_(X) X >>[&](FN_OTYPE(X)&
 #define _as(X) X)
-
 #define with_(X) use_(X)_as(X)
 
 #ifdef __GNUC__
