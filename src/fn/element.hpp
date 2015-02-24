@@ -116,7 +116,7 @@ class Element
     };
 
 public:
-    Element(T const i): i{i} {}
+    Element(T const i): i(i) {}
 
     template<typename S>
     S get_index(S const& size) const
