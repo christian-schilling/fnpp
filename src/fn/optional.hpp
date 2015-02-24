@@ -260,7 +260,7 @@ public:
     optional(T&& v):
         fn_::optional_value<T>(reinterpret_cast<T*>(value_mem))
     {
-        new (value_mem) T{fn_::move(v)};
+        new (value_mem) T(fn_::move(v));
     }
 
     optional(optional<T>&& original):
@@ -271,7 +271,7 @@ public:
         )
     {
         if(original.valid()){
-            new (value_mem) T{fn_::move(*original.value)};
+            new (value_mem) T(fn_::move(*original.value));
             original.value = nullptr;
             reinterpret_cast<T*>(original.value_mem)->~T();
         }
@@ -284,7 +284,7 @@ public:
                 *fn_::optional_value<T>::value = fn_::move(*other.value);
             }
             else{
-                new (value_mem) T{fn_::move(*other.value)};
+                new (value_mem) T(fn_::move(*other.value));
                 fn_::optional_value<T>::value = reinterpret_cast<T*>(value_mem);
             }
         }
@@ -330,7 +330,7 @@ public:
                 : nullptr
         )
     {
-        original >>[&](T const& v){ new (value_mem) T{v};};
+        original >>[&](T const& v){ new (value_mem) T(v);};
     }
 
     optional(optional<T const&> const& original):
@@ -338,7 +338,7 @@ public:
             ? reinterpret_cast<T*>(value_mem)
             : nullptr)
     {
-        original >>[&](T const& v){ new (value_mem) T{v};};
+        original >>[&](T const& v){ new (value_mem) T(v);};
     }
 
     optional(optional<T const> const& original):
@@ -346,7 +346,7 @@ public:
             ? reinterpret_cast<T*>(value_mem)
             : nullptr)
     {
-        original >>[&](T const& v){ new (value_mem) T{v};};
+        original >>[&](T const& v){ new (value_mem) T(v);};
     }
 
     optional(optional<T> const& original):
@@ -354,7 +354,7 @@ public:
             ? reinterpret_cast<T*>(value_mem)
             : nullptr)
     {
-        original >>[&](T const& v){ new (value_mem) T{v};};
+        original >>[&](T const& v){ new (value_mem) T(v);};
     }
 };
 
