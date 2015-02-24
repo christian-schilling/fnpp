@@ -4,6 +4,7 @@
 
 #include "fn/iterators.hpp"
 #include "fn/optional.hpp"
+#include "fn/synchronized.hpp"
 #include "fn/element.hpp"
 
 /*

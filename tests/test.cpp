@@ -1165,6 +1165,32 @@ creates_iterator_to_ranges)
     }
 }
 
+static int lock_count = 0;
+static int unlock_count = 0;
+
+struct DummyMutex
+{
+    void lock(){ lock_count++; }
+    void unlock(){ unlock_count++; }
+};
+
+TEST(Synchronized,calls_lock_and_unlock)
+{
+    EXPECT_EQ(0,lock_count);
+    EXPECT_EQ(0,unlock_count);
+    auto x = synchronized<int,DummyMutex>(5);
+    EXPECT_EQ(0,lock_count);
+    EXPECT_EQ(0,unlock_count);
+
+    with_(x){
+        EXPECT_EQ(1,lock_count);
+        EXPECT_EQ(0,unlock_count);
+        EXPECT_EQ(5,x);
+    };
+
+    EXPECT_EQ(1,lock_count);
+    EXPECT_EQ(1,unlock_count);
+}
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
