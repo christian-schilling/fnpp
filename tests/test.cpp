@@ -1176,8 +1176,9 @@ struct DummyMutex
 
 TEST(Synchronized,calls_lock_and_unlock)
 {
-    EXPECT_EQ(0,lock_count);
-    EXPECT_EQ(0,unlock_count);
+
+    lock_count = 0;
+    unlock_count = 0;
     auto x = synchronized<int,DummyMutex>(5);
     EXPECT_EQ(0,lock_count);
     EXPECT_EQ(0,unlock_count);
@@ -1191,6 +1192,79 @@ TEST(Synchronized,calls_lock_and_unlock)
     EXPECT_EQ(1,lock_count);
     EXPECT_EQ(1,unlock_count);
 }
+
+TEST(Synchronized,works_with_const)
+{
+    lock_count = 0;
+    unlock_count = 0;
+    auto const x = synchronized<int,DummyMutex>(5);
+    EXPECT_EQ(0,lock_count);
+    EXPECT_EQ(0,unlock_count);
+
+    x >> [&](int const x){
+        EXPECT_EQ(1,lock_count);
+        EXPECT_EQ(0,unlock_count);
+        EXPECT_EQ(5,x);
+    };
+
+    EXPECT_EQ(1,lock_count);
+    EXPECT_EQ(1,unlock_count);
+}
+
+TEST(Synchronized,take)
+{
+    lock_count = 0;
+    unlock_count = 0;
+    auto x = synchronized<std::vector<int>,DummyMutex>(std::vector<int>{1,2,34});
+
+    EXPECT_EQ(0,lock_count);
+    EXPECT_EQ(0,unlock_count);
+
+    auto y = x.take();
+
+    EXPECT_EQ(1,lock_count);
+    EXPECT_EQ(1,unlock_count);
+
+    with_(x){
+        EXPECT_EQ(2,lock_count);
+        EXPECT_EQ(1,unlock_count);
+        EXPECT_EQ(0,x.size());
+    };
+
+    EXPECT_EQ(3,y.size());
+
+    EXPECT_EQ(2,lock_count);
+    EXPECT_EQ(2,unlock_count);
+
+}
+
+TEST(Synchronized,clone)
+{
+    lock_count = 0;
+    unlock_count = 0;
+    auto x = synchronized<std::vector<int>,DummyMutex>(std::vector<int>{1,2,34});
+
+    EXPECT_EQ(0,lock_count);
+    EXPECT_EQ(0,unlock_count);
+
+    auto y = x.clone();
+
+    EXPECT_EQ(1,lock_count);
+    EXPECT_EQ(1,unlock_count);
+
+    with_(x){
+        EXPECT_EQ(2,lock_count);
+        EXPECT_EQ(1,unlock_count);
+        EXPECT_EQ(3,x.size());
+    };
+
+    EXPECT_EQ(3,y.size());
+
+    EXPECT_EQ(2,lock_count);
+    EXPECT_EQ(2,unlock_count);
+
+}
+
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
