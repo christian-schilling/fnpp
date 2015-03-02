@@ -1262,7 +1262,57 @@ TEST(Synchronized,clone)
 
     EXPECT_EQ(2,lock_count);
     EXPECT_EQ(2,unlock_count);
+}
 
+TEST(Synchronized,guard)
+{
+    lock_count = 0;
+    unlock_count = 0;
+    auto x = synchronized<int,DummyMutex>(5);
+    EXPECT_EQ(0,lock_count);
+    EXPECT_EQ(0,unlock_count);
+
+    {
+        auto xg = x.guard();
+        EXPECT_EQ(1,lock_count);
+        EXPECT_EQ(0,unlock_count);
+        EXPECT_EQ(5,*xg);
+    };
+    EXPECT_EQ(1,lock_count);
+    EXPECT_EQ(1,unlock_count);
+
+    EXPECT_EQ(5,*x.guard());
+    EXPECT_EQ(2,lock_count);
+    EXPECT_EQ(2,unlock_count);
+
+    EXPECT_EQ(5,*x.guard());
+    EXPECT_EQ(3,lock_count);
+    EXPECT_EQ(3,unlock_count);
+}
+
+struct GuardedObject
+{
+    int x;
+    GuardedObject(int x): x(x) {}
+};
+
+TEST(Synchronized,guard_object)
+{
+    lock_count = 0;
+    unlock_count = 0;
+    auto x = synchronized<GuardedObject,DummyMutex>(8);
+    EXPECT_EQ(0,lock_count);
+    EXPECT_EQ(0,unlock_count);
+
+    EXPECT_EQ(8,x.guard()->x);
+    EXPECT_EQ(1,lock_count);
+    EXPECT_EQ(1,unlock_count);
+
+    x.guard()->x = 10;
+
+    EXPECT_EQ(10,x.guard()->x);
+    EXPECT_EQ(3,lock_count);
+    EXPECT_EQ(3,unlock_count);
 }
 
 

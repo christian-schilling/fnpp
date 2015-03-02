@@ -47,6 +47,39 @@ public:
         mutex.unlock();
         return fn_::move(t);
     }
+
+    class synchronized_guard
+    {
+        Mutex& mutex;
+        T& value;
+    public:
+        synchronized_guard(Mutex& mutex, T& value):
+            mutex(mutex),
+            value(value)
+        {
+            mutex.lock();
+        }
+
+        ~synchronized_guard()
+        {
+            mutex.unlock();
+        }
+
+        T& operator*()
+        {
+            return value;
+        }
+
+        T* operator->()
+        {
+            return &value;
+        }
+    };
+
+    synchronized_guard guard()
+    {
+        return synchronized_guard(mutex,value);
+    }
 };
 
 };
