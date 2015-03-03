@@ -60,25 +60,36 @@ public:
             mutex.lock();
         }
 
-        ~synchronized_guard()
+        ~synchronized_guard() { mutex.unlock(); }
+        T& operator*() { return value; }
+        T* operator->() { return &value; }
+    };
+
+    class synchronized_guard_const
+    {
+        Mutex& mutex;
+        T const& value;
+    public:
+        synchronized_guard_const(Mutex& mutex, T const& value):
+            mutex(mutex),
+            value(value)
         {
-            mutex.unlock();
+            mutex.lock();
         }
 
-        T& operator*()
-        {
-            return value;
-        }
-
-        T* operator->()
-        {
-            return &value;
-        }
+        ~synchronized_guard_const() { mutex.unlock(); }
+        T const& operator*() const { return value; }
+        T const* operator->() const { return &value; }
     };
 
     synchronized_guard guard()
     {
         return synchronized_guard(mutex,value);
+    }
+
+    synchronized_guard_const guard() const
+    {
+        return synchronized_guard_const(mutex,value);
     }
 };
 

@@ -1316,6 +1316,23 @@ TEST(Synchronized,guard_object)
 }
 
 
+TEST(Synchronized,guard_object_const)
+{
+    lock_count = 0;
+    unlock_count = 0;
+    auto const x = synchronized<GuardedObject,DummyMutex>(8);
+    EXPECT_EQ(0,lock_count);
+    EXPECT_EQ(0,unlock_count);
+
+    EXPECT_EQ(8,x.guard()->x);
+    EXPECT_EQ(1,lock_count);
+    EXPECT_EQ(1,unlock_count);
+
+    EXPECT_EQ(8,(*x.guard()).x);
+    EXPECT_EQ(2,lock_count);
+    EXPECT_EQ(2,unlock_count);
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
