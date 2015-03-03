@@ -4,8 +4,8 @@ env = Environment()
 import os
 env['ENV']['TERM'] = os.environ['TERM']
 
-#if env["CXX"] == "g++":
-#    env["CXX"] = "clang++"
+if env["CXX"] == "g++":
+    env["CXX"] = "clang++"
 
 env.Append(
     CPPPATH=[
