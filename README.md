@@ -40,7 +40,8 @@ results in undefined behavior. Instead values can be accessed using the >> and
 ```C++
 optional<int> maybe_int();
 
-maybe_int() >>[](int i){
+maybe_int()
+>>[](int i){
     std::cout << "my int is: " << i << std::endl;
 }
 ||[]{
@@ -51,7 +52,8 @@ maybe_int() >>[](int i){
 In addition to avoiding undefined behavior, the whole thing has the added advantage
 of beeing an expression that can have a value:
 ```C++
-auto text = maybe_int() >>[](int i){
+auto text = maybe_int()
+>>[](int i){
     return std::string{"my int is: "} + std::to_string(i);
 }
 ||[]{
