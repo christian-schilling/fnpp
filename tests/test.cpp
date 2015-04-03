@@ -1315,6 +1315,118 @@ TEST(Synchronized,guard_object)
     EXPECT_EQ(3,unlock_count);
 }
 
+auto const smallest_perfect_number = when(_ == 6);
+
+auto const judge = [](int x){ return classify(x)(
+    when(_ == 3)            >>= "half perfect",
+    smallest_perfect_number >>= "perfect",
+    default_to              >>= "not perfect"
+);};
+
+TEST(Classify,classify)
+{
+    {
+        auto const t = classify(3)(
+            when(_ == 3) >>= 5,
+            when(6 == _) >>= 9,
+            default_to >>= 0
+        );
+        EXPECT_EQ(5,t);
+    }
+
+    {
+        auto const t = classify(3)(
+            when(_ == 1) >>= 8,
+            when(_ == 3) >>= 5,
+            when(_ == 3) >>= 6,
+            when(6 == _) >>= 9,
+            default_to >>= 0
+        );
+        EXPECT_EQ(5,t);
+    }
+
+    {
+        EXPECT_EQ(std::string("not perfect"),judge(1));
+        EXPECT_EQ(std::string("half perfect"),judge(3));
+        EXPECT_EQ(std::string("perfect"),judge(6));
+        EXPECT_EQ(std::string("not perfect"),judge(7));
+    }
+
+    {
+        auto x = 8;
+        auto const t = classify(7)(
+            when(_ == 3) >>= 5,
+            when(_ == 6) >>= 9,
+            when(_ == 7) >>[&](int i) { return x*i; },
+            default_to >>= 0
+        );
+        EXPECT_EQ(56,t);
+    }
+
+    {
+        auto const t = classify(12)(
+            when(_ == 3) >>= 5,
+            when(_ == 6) >>= 9,
+            default_to >>[](int i) { return i*3; }
+        );
+        EXPECT_EQ(36,t);
+    }
+
+    {
+        auto const t = classify(7)(
+            when(_ == 3) >>= 5,
+            when(_ == 6) >>= 9,
+            default_to >>[](int i){
+                printf("no match: %d\n",i);
+                return 0;
+            }
+        );
+        EXPECT_EQ(0,t);
+    }
+}
+
+TEST(Predicates,predicates)
+{
+    EXPECT_TRUE((_ == 4)(4));
+    EXPECT_FALSE((_ == 4)(5));
+    EXPECT_TRUE((4 == _)(4));
+    EXPECT_FALSE((4 == _)(5));
+
+    EXPECT_FALSE((_ != 4)(4));
+    EXPECT_TRUE((_ != 4)(5));
+    EXPECT_FALSE((4 != _)(4));
+    EXPECT_TRUE((4 != _)(5));
+
+    EXPECT_TRUE((4 < _)(8));
+    EXPECT_FALSE((4 < _)(4));
+    EXPECT_FALSE((4 < _)(1));
+    EXPECT_TRUE((_ < 5)(1));
+    EXPECT_FALSE((_ < 5)(8));
+    EXPECT_FALSE((_ < 5)(5));
+
+    EXPECT_FALSE((4 > _)(8));
+    EXPECT_FALSE((4 > _)(4));
+    EXPECT_TRUE((4 > _)(1));
+    EXPECT_FALSE((_ > 5)(1));
+    EXPECT_TRUE((_ > 5)(8));
+    EXPECT_FALSE((_ > 5)(5));
+
+    EXPECT_TRUE((4 <= _)(8));
+    EXPECT_TRUE((4 <= _)(4));
+    EXPECT_FALSE((4 <= _)(1));
+    EXPECT_TRUE((_ <= 5)(1));
+    EXPECT_FALSE((_ <= 5)(8));
+    EXPECT_TRUE((_ <= 5)(5));
+
+    EXPECT_FALSE((4 >= _)(8));
+    EXPECT_TRUE((4 >= _)(4));
+    EXPECT_TRUE((4 >= _)(1));
+    EXPECT_FALSE((_ >= 5)(1));
+    EXPECT_TRUE((_ >= 5)(8));
+    EXPECT_TRUE((_ >= 5)(5));
+
+    EXPECT_EQ(10,(3 + _)(7));
+}
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);

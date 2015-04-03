@@ -6,6 +6,7 @@
 #include "fn/optional.hpp"
 #include "fn/synchronized.hpp"
 #include "fn/element.hpp"
+#include "fn/classify.hpp"
 
 /*
  * Some macros to make optional<T> usable with complex types.
