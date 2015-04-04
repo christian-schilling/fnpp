@@ -7,6 +7,7 @@
 #include "fn/synchronized.hpp"
 #include "fn/element.hpp"
 #include "fn/classify.hpp"
+#include "fn/express.hpp"
 
 /*
  * Some macros to make optional<T> usable with complex types.

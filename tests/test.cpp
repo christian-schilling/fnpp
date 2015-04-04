@@ -1385,7 +1385,7 @@ TEST(Classify,classify)
     }
 }
 
-TEST(Predicates,predicates)
+TEST(Express,expressions)
 {
     EXPECT_TRUE((_ == 4)(4));
     EXPECT_FALSE((_ == 4)(5));
