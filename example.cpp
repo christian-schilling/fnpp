@@ -38,7 +38,7 @@ int main(int,char**)
     >>[](int i){ // Yes
         std::cout << "my int is: " << i << std::endl;   // use my int
     }
-    >>[]{ // No
+    ||[]{ // No
         std::cout << "I have no int" << std::endl;
     };
 
@@ -49,7 +49,7 @@ int main(int,char**)
         >>[](auto greeting){
             return greeting + " world!";
         }
-        >>[]{
+        ||[]{
             return std::string{"no hello"};
         };
 
