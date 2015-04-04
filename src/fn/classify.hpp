@@ -69,10 +69,10 @@ auto match_helper(M const& m, ValuePair<K,V> vp, Args... args)
     }
 }
 
-template<typename K>
+template<typename T>
 struct Match
 {
-    K const k;
+    T const k;
 
 	template<typename K, typename V, typename ...Args>
 	auto operator()(ValuePair<K, V> vp, Args... args) const -> V
