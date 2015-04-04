@@ -74,10 +74,10 @@ struct Match
 {
     K const k;
 
-    template<typename ...Args>
-    auto operator()(Args... args) const -> decltype(match_helper(*this,args...))
+	template<typename K, typename V, typename ...Args>
+	auto operator()(ValuePair<K, V> vp, Args... args) const -> V
     {
-        return match_helper(*this,args...);
+        return match_helper(*this,vp,args...);
     }
 };
 
