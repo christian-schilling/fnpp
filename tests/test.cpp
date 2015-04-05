@@ -1385,7 +1385,7 @@ TEST(Classify,pick)
     }
 }
 
-TEST(Express,expressions)
+TEST(Express,simple_expressions)
 {
     EXPECT_TRUE((_ == 4)(4));
     EXPECT_FALSE((_ == 4)(5));
@@ -1426,11 +1426,32 @@ TEST(Express,expressions)
     EXPECT_TRUE((_ >= 5)(5));
 
     EXPECT_EQ(10,(3 + _)(7));
-    /* auto x = (10 == (3 + _)); */
-    /* (void)x; */
-    /* EXPECT_EQ(true,x(7)); */
-    /* EXPECT_EQ(12, (2 + (3 + _))(7)); */
-    /* EXPECT_EQ(9, (10 == (3 + _))(3)); */
+}
+
+TEST(Express,complex_expressions)
+{
+    EXPECT_EQ(8,(_)(8));
+
+    EXPECT_EQ(16,(_ + _)(8));
+    EXPECT_EQ(12,(_ + 4)(8));
+    EXPECT_EQ(13,(5 + _)(8));
+    EXPECT_EQ(14,((5 + _)*_)(2));
+    EXPECT_EQ(4,(_*_)(2));
+
+    auto x = (10 == (3 + _));
+    EXPECT_EQ(true,x(7));
+    EXPECT_EQ(12, (2 + (3 + _))(7));
+    EXPECT_EQ(false, (10 == (3 + _))(3));
+
+    auto e =  4 & (1 << _);
+    EXPECT_TRUE(e(2));
+    EXPECT_FALSE(e(3));
+
+    EXPECT_EQ(3,(8 % _)(5));
+
+    auto s = std::string("hello") + _;
+
+    EXPECT_EQ("hello world",s(" world"));
 }
 
 TEST(Synchronized,guard_object_const)

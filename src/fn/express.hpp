@@ -6,98 +6,111 @@ namespace fn_ {
 
 struct Placeholder
 {
-    template<typename O>
-    auto operator()(O o) const -> O { return o; }
+    template<typename R, typename L, typename V>
+    auto operator()(R, L, V v) const -> V
+    {
+        return v;
+    }
 };
 
-template<typename N>
-struct PNode
+template<typename T>
+struct Constant
 {
-    N n;
-
-    template<typename T>
-    auto operator()(T t) const -> decltype(n(t)) { return n(t); }
+    T v;
+    template<typename R, typename L, typename V>
+    auto operator()(R, L, V) const -> T
+    {
+        return v;
+    }
 };
+
+template<typename L, typename R, typename Op>
+struct ENode
+{
+    L l;
+    R r;
+    Op op;
+
+    template<typename V>
+    auto operator()(V v) const -> decltype(op(l,r,v))
+    {
+        return op(l,r,v);
+    }
+};
+
 
 #define FN_MAKE_OP(NAME_,OP_)\
-template<typename T>\
-class NAME_\
+struct NAME_\
 {\
-    T const v;\
+    template<typename R, typename L, typename V>\
+    auto operator()(L l, R r, V v) const -> decltype(l(v)  OP_ r(v))\
+    {\
+        return l(v)  OP_ r(v);\
+    }\
 \
-public:\
-    NAME_(T v): v(v) {}\
-\
-    template<typename O>\
-    auto operator()(O const& o) const -> decltype(v OP_ o) { return v OP_ o; }\
 };\
-\
-template<typename T>\
-auto operator OP_(Placeholder const&, T const& i) -> PNode<NAME_<T>> const\
+template<\
+    typename LL, typename LR, typename LOp,\
+    typename RL, typename RR, typename ROp\
+>\
+auto operator OP_(ENode<LL,LR,LOp> lnode, ENode<RL,RR,ROp> rnode)\
+    -> ENode<ENode<LL,LR,LOp>,ENode<RL,RR,ROp>,NAME_>\
 {\
-    return PNode<NAME_<T>>{NAME_<T>(i)};\
+    return ENode<ENode<LL,LR,LOp>,ENode<RL,RR,ROp>,NAME_>{lnode,rnode,NAME_()};\
 }\
-\
-template<typename T>\
-auto operator OP_(T const& i, Placeholder const&) -> PNode<NAME_<T>> const\
+template<\
+    typename LL, typename LR, typename LOp,\
+    typename T\
+>\
+auto operator OP_(ENode<LL,LR,LOp> lnode, T v)\
+    -> ENode<ENode<LL,LR,LOp>,ENode<Placeholder,Placeholder,Constant<T>>,NAME_>\
 {\
-    return PNode<NAME_<T>>{NAME_<T>(i)};\
+    return ENode<\
+        ENode<LL,LR,LOp>,\
+        ENode<Placeholder,Placeholder,Constant<T>>,\
+        NAME_\
+    >{lnode,{{},{},{v}},NAME_()};\
 }\
-
-#define FN_MAKE_OP_PAIR(NAME1_,OP1_,NAME2_,OP2_)\
-template<typename T>\
-class NAME1_\
+template<\
+    typename RL, typename RR, typename ROp,\
+    typename T\
+>\
+auto operator OP_(T v,ENode<RL,RR,ROp> rnode)\
+    -> ENode<ENode<Placeholder,Placeholder,Constant<T>>,ENode<RL,RR,ROp>,NAME_>\
 {\
-    T const v;\
-\
-public:\
-    NAME1_(T v): v(v) {}\
-    auto operator()(T const& o) const -> decltype(v OP1_ o) { return v OP1_ o; }\
-};\
-template<typename T>\
-class NAME2_\
-{\
-    T const v;\
-\
-public:\
-    NAME2_(T v): v(v) {}\
-    auto operator()(T const& o) const -> decltype(v OP2_ o) { return v OP2_ o; }\
-};\
-\
-template<typename T>\
-auto operator OP1_(Placeholder const&, T const& i) -> NAME2_<T> const\
-{\
-    return NAME2_<T>(i);\
-}\
-template<typename T>\
-auto operator OP1_(T const& i, Placeholder const&) -> NAME1_<T> const\
-{\
-    return NAME1_<T>(i);\
-}\
-template<typename T>\
-auto operator OP2_(Placeholder const&, T const& i) -> NAME1_<T> const\
-{\
-    return NAME1_<T>(i);\
-}\
-template<typename T>\
-auto operator OP2_(T const& i, Placeholder const&) -> NAME2_<T> const\
-{\
-    return NAME2_<T>(i);\
+    return ENode<\
+        ENode<Placeholder,Placeholder,Constant<T>>,\
+        ENode<RL,RR,ROp>,\
+        NAME_\
+    >{{{},{},{v}},rnode,NAME_()};\
 }
 
-FN_MAKE_OP(equal_to,==);
-FN_MAKE_OP(not_equal_to,!=);
-FN_MAKE_OP_PAIR(less_than,<,greater_than,>);
-FN_MAKE_OP_PAIR(less_or_equal,<=,greater_or_equal,>=);
-
-FN_MAKE_OP(addition,+);
-
+FN_MAKE_OP(fn_op_addition,+)
+FN_MAKE_OP(fn_op_multiplication,*)
+FN_MAKE_OP(fn_op_division,/)
+FN_MAKE_OP(fn_op_modulo,%)
+FN_MAKE_OP(fn_op_subtraction,-)
+FN_MAKE_OP(fn_op_greater,>)
+FN_MAKE_OP(fn_op_smaller,<)
+FN_MAKE_OP(fn_op_greater_or_equal,>=)
+FN_MAKE_OP(fn_op_smaller_or_equal,<=)
+FN_MAKE_OP(fn_op_equal,==)
+FN_MAKE_OP(fn_op_not_equal,!=)
+FN_MAKE_OP(fn_op_rshift,>>)
+FN_MAKE_OP(fn_op_lshift,<<)
+FN_MAKE_OP(fn_op_and,&&)
+FN_MAKE_OP(fn_op_or,||)
+FN_MAKE_OP(fn_op_bit_and,&)
+FN_MAKE_OP(fn_op_bit_or,|)
 #undef FN_MAKE_OP
-#undef FN_MAKE_OP_PAIR
 
 } // namespace fn_
 
-static auto const _ = fn_::Placeholder();
+static auto const _ = fn_::ENode<
+    fn_::Placeholder,
+    fn_::Placeholder,
+    fn_::Placeholder
+>();
 
 } // namespace fn
 
