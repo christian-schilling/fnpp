@@ -6,38 +6,25 @@ namespace fn {
 namespace fn_ {
 
 template<typename F>
-class Invoke
+struct Invoke
 {
     F f;
-
-public:
-    Invoke(F f): f(f) {}
-
     template<typename ...Args>
-    auto operator()(Args... args) -> decltype(f(args...))
-    {
-        return f(args...);
-    }
+    auto operator()(Args... args) -> decltype(f(args...)) { return f(args...); }
 };
 
 template<typename V>
 struct InvokeHelper
 {
     template<typename X>
-    static auto inv(V v,X) -> V
-    {
-        return v;
-    }
+    static auto inv(V v,X) -> V { return v; }
 };
 
 template<typename V>
 struct InvokeHelper<Invoke<V>>
 {
     template<typename X>
-    static auto inv(Invoke<V> v,X x) -> decltype(v(x))
-    {
-        return v(x);
-    }
+    static auto inv(Invoke<V> v,X x) -> decltype(v(x)) { return v(x); }
 };
 
 template<typename T1, typename T2>
@@ -48,7 +35,6 @@ struct ValuePair
 };
 
 struct DefaultTo {};
-
 
 template<typename M, typename V>
 auto match_helper(M const& m, ValuePair<DefaultTo,V> vp)
@@ -70,7 +56,7 @@ auto match_helper(M const& m, ValuePair<K,V> vp, Args... args)
 }
 
 template<typename T>
-struct Match
+struct Pick
 {
     T const k;
 
@@ -81,33 +67,31 @@ struct Match
     }
 };
 
-
 template<typename P>
 struct Is { P const p; };
 
 template<typename P, typename Then>
-auto operator >>=(Is<P> const isp, Then const then) -> ValuePair<P,Then> const
+auto operator >>=(Is<P> const w, Then const then) -> ValuePair<P,Then> const
 {
-    return ValuePair<P,Then>{isp.p,then};
+    return ValuePair<P,Then>{w.p,then};
 }
 
 template<typename P, typename Then>
-auto operator >>(Is<P> const isp, Then const then) -> ValuePair<P,Invoke<Then>> const
+auto operator >>(Is<P> const w, Then const then) -> ValuePair<P,Invoke<Then>> const
 {
-    return ValuePair<P,Invoke<Then>>{isp.p,Invoke<Then>(then)};
+    return ValuePair<P,Invoke<Then>>{w.p,Invoke<Then>{then}};
 }
 
 } // namespace fn_
 
 template<typename K>
-auto classify(K t) -> fn_::Match<K> const { return fn_::Match<K>{t}; }
+auto pick(K t) -> fn_::Pick<K> const { return fn_::Pick<K>{t}; }
 
 template<typename P>
-auto when(P p) -> fn_::Is<P> const { return fn_::Is<P>{p}; }
+auto is(P p) -> fn_::Is<P> const { return fn_::Is<P>{p}; }
 
-static auto const default_to = when(fn_::DefaultTo());
+static auto const default_to = is(fn_::DefaultTo());
 
 } // namespace fn
-
 
 #endif

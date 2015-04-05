@@ -1315,31 +1315,31 @@ TEST(Synchronized,guard_object)
     EXPECT_EQ(3,unlock_count);
 }
 
-auto const smallest_perfect_number = when(_ == 6);
+auto const smallest_perfect_number = is(_ == 6);
 
-auto const judge = [](int x){ return classify(x)(
-    when(_ == 3)            >>= "half perfect",
+auto const judge = [](int x){ return pick(x)(
+    is(_ == 3)              >>= "half perfect",
     smallest_perfect_number >>= "perfect",
     default_to              >>= "not perfect"
 );};
 
-TEST(Classify,classify)
+TEST(Classify,pick)
 {
     {
-        auto const t = classify(3)(
-            when(_ == 3) >>= 5,
-            when(6 == _) >>= 9,
+        auto const t = pick(3)(
+            is(_ == 3) >>= 5,
+            is(6 == _) >>= 9,
             default_to >>= 0
         );
         EXPECT_EQ(5,t);
     }
 
     {
-        auto const t = classify(3)(
-            when(_ == 1) >>= 8,
-            when(_ == 3) >>= 5,
-            when(_ == 3) >>= 6,
-            when(6 == _) >>= 9,
+        auto const t = pick(3)(
+            is(_ == 1) >>= 8,
+            is(_ == 3) >>= 5,
+            is(_ == 3) >>= 6,
+            is(6 == _) >>= 9,
             default_to >>= 0
         );
         EXPECT_EQ(5,t);
@@ -1354,28 +1354,28 @@ TEST(Classify,classify)
 
     {
         auto x = 8;
-        auto const t = classify(7)(
-            when(_ == 3) >>= 5,
-            when(_ == 6) >>= 9,
-            when(_ == 7) >>[&](int i) { return x*i; },
+        auto const t = pick(7)(
+            is(_ == 3) >>= 5,
+            is(_ == 6) >>= 9,
+            is(_ == 7) >>[&](int i) { return x*i; },
             default_to >>= 0
         );
         EXPECT_EQ(56,t);
     }
 
     {
-        auto const t = classify(12)(
-            when(_ == 3) >>= 5,
-            when(_ == 6) >>= 9,
+        auto const t = pick(12)(
+            is(_ == 3) >>= 5,
+            is(_ == 6) >>= 9,
             default_to >>[](int i) { return i*3; }
         );
         EXPECT_EQ(36,t);
     }
 
     {
-        auto const t = classify(7)(
-            when(_ == 3) >>= 5,
-            when(_ == 6) >>= 9,
+        auto const t = pick(7)(
+            is(_ == 3) >>= 5,
+            is(_ == 6) >>= 9,
             default_to >>[](int i){
                 printf("no match: %d\n",i);
                 return 0;
@@ -1426,6 +1426,11 @@ TEST(Express,expressions)
     EXPECT_TRUE((_ >= 5)(5));
 
     EXPECT_EQ(10,(3 + _)(7));
+    /* auto x = (10 == (3 + _)); */
+    /* (void)x; */
+    /* EXPECT_EQ(true,x(7)); */
+    /* EXPECT_EQ(12, (2 + (3 + _))(7)); */
+    /* EXPECT_EQ(9, (10 == (3 + _))(3)); */
 }
 
 TEST(Synchronized,guard_object_const)
