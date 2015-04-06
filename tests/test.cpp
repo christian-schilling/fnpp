@@ -1428,6 +1428,13 @@ TEST(Express,simple_expressions)
     EXPECT_EQ(10,(3 + _)(7));
 }
 
+TEST(Express,unary_operators)
+{
+    EXPECT_FALSE((!_)(true));
+    EXPECT_TRUE((!_)(false));
+    EXPECT_EQ(~0xf0,(~_)(0xf0));
+}
+
 TEST(Express,complex_expressions)
 {
     EXPECT_EQ(8,(_)(8));

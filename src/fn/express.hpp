@@ -7,10 +7,7 @@ namespace fn_ {
 struct Placeholder
 {
     template<typename R, typename L, typename V>
-    auto operator()(R, L, V v) const -> V
-    {
-        return v;
-    }
+    auto operator()(R, L, V v) const -> V { return v; }
 };
 
 template<typename T>
@@ -18,10 +15,7 @@ struct Constant
 {
     T v;
     template<typename R, typename L, typename V>
-    auto operator()(R, L, V) const -> T
-    {
-        return v;
-    }
+    auto operator()(R, L, V) const -> T { return v; }
 };
 
 template<typename L, typename R, typename Op>
@@ -32,10 +26,7 @@ struct ENode
     Op op;
 
     template<typename V>
-    auto operator()(V v) const -> decltype(op(l,r,v))
-    {
-        return op(l,r,v);
-    }
+    auto operator()(V v) const -> decltype(op(l,r,v)) { return op(l,r,v); }
 };
 
 
@@ -102,7 +93,33 @@ FN_MAKE_OP(fn_op_and,&&)
 FN_MAKE_OP(fn_op_or,||)
 FN_MAKE_OP(fn_op_bit_and,&)
 FN_MAKE_OP(fn_op_bit_or,|)
+FN_MAKE_OP(fn_op_bit_xor,^)
 #undef FN_MAKE_OP
+
+#define FN_MAKE_UNARY_OP(NAME_,OP_)\
+struct NAME_\
+{\
+    template<typename R, typename L, typename V>\
+    auto operator()(L, R r, V v) const -> decltype(OP_ r(v)) { return OP_ r(v); }\
+};\
+\
+template<\
+    typename RL, typename RR, typename ROp\
+>\
+auto operator OP_(ENode<RL,RR,ROp> rnode)\
+    -> ENode<ENode<Placeholder,Placeholder,Placeholder>,ENode<RL,RR,ROp>,NAME_>\
+{\
+    return ENode<\
+        ENode<Placeholder,Placeholder,Placeholder>,\
+        ENode<RL,RR,ROp>,\
+        NAME_\
+    >{{},rnode,NAME_()};\
+}
+
+FN_MAKE_UNARY_OP(negate,!)
+FN_MAKE_UNARY_OP(bitwise_negate,~)
+
+#undef FN_MAKE_UNARY_OP
 
 } // namespace fn_
 
