@@ -69,16 +69,22 @@ struct Pick
 };
 
 template<typename P>
-struct Is { P const p; };
+struct When { P const p; };
 
 template<typename P, typename Then>
-auto operator >>=(Is<P> const w, Then const then) -> ValuePair<P,Then> const
+auto operator >>=(When<P> const w, Then const then) -> ValuePair<P,Then> const
 {
     return ValuePair<P,Then>{w.p,then};
 }
 
 template<typename P, typename Then>
-auto operator >>(Is<P> const w, Then const then) -> ValuePair<P,Invoke<Then>> const
+auto operator >>(When<P> const w, Then const then) -> ValuePair<P,Invoke<Then>> const
+{
+    return ValuePair<P,Invoke<Then>>{w.p,Invoke<Then>{then}};
+}
+
+template<typename P, typename Then>
+auto operator <<=(When<P> const w, Then const then) -> ValuePair<P,Invoke<Then>> const
 {
     return ValuePair<P,Invoke<Then>>{w.p,Invoke<Then>{then}};
 }
@@ -89,9 +95,9 @@ template<typename K>
 auto pick(K t) -> fn_::Pick<K> const { return fn_::Pick<K>{t}; }
 
 template<typename P>
-auto is(P p) -> fn_::Is<P> const { return fn_::Is<P>{p}; }
+auto when(P p) -> fn_::When<P> const { return fn_::When<P>{p}; }
 
-static auto const default_to = is(fn_::DefaultTo());
+static auto const default_to = when(fn_::DefaultTo());
 
 } // namespace fn
 
