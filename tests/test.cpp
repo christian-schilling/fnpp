@@ -1355,9 +1355,9 @@ TEST(Classify,pick)
     {
         auto x = 8;
         auto const t = pick(7)(
+            is(_ == 7) >>[&](int i) { return x*i; },
             is(_ == 3) >>= 5,
             is(_ == 6) >>= 9,
-            is(_ == 7) >>[&](int i) { return x*i; },
             default_to >>= 0
         );
         EXPECT_EQ(56,t);

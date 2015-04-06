@@ -61,7 +61,8 @@ struct Pick
     T const k;
 
 	template<typename K, typename V, typename ...Args>
-	auto operator()(ValuePair<K, V> vp, Args... args) const -> V
+	auto operator()(ValuePair<K, V> vp, Args... args) const
+        -> decltype(InvokeHelper<V>::inv(vp.second,k))
     {
         return match_helper(*this,vp,args...);
     }
