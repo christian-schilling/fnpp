@@ -27,80 +27,84 @@ struct InvokeHelper<Invoke<V>>
     static auto inv(Invoke<V> v,X x) -> decltype(v(x)) { return v(x); }
 };
 
-template<typename T1, typename T2>
-struct ValuePair
+template<typename Predicate, typename Value>
+struct Rule
 {
-    T1 first;
-    T2 second;
+    Predicate predicate;
+    Value value;
 };
 
 struct DefaultTo {};
 
-template<typename M, typename V>
-auto match_helper(M const& m, ValuePair<DefaultTo,V> vp)
-    -> decltype(InvokeHelper<V>::inv(vp.second,m.k))
+template<typename P, typename Value>
+auto pick_helper(P const& p, Rule<DefaultTo,Value> rule)
+    -> decltype(InvokeHelper<Value>::inv(rule.value,p.var))
 {
-    return InvokeHelper<V>::inv(vp.second,m.k);
+    return InvokeHelper<Value>::inv(rule.value,p.var);
 }
 
-template<typename M, typename K, typename V, typename ...Args>
-auto match_helper(M const& m, ValuePair<K,V> vp, Args... args)
-    -> decltype(InvokeHelper<V>::inv(vp.second,m.k))
+template<typename P, typename Predicate, typename Value, typename ...Args>
+auto pick_helper(P const& p, Rule<Predicate,Value> rule, Args... args)
+    -> decltype(InvokeHelper<Value>::inv(rule.value,p.var))
 {
-    if(vp.first(m.k)){
-        return InvokeHelper<V>::inv(vp.second,m.k);
+    if(rule.predicate(p.var)){
+        return InvokeHelper<Value>::inv(rule.value,p.var);
     }
     else{
-        return match_helper(m,args...);
+        return pick_helper(p,args...);
     }
 }
 
-template<typename T>
+template<typename Var>
 struct Pick
 {
-    T const k;
+    Var const var;
 
-	template<typename K, typename V, typename ...Args>
-	auto operator()(ValuePair<K, V> vp, Args... args) const
-        -> decltype(InvokeHelper<V>::inv(vp.second,k))
+	template<typename Predicate, typename Value, typename ...Args>
+	auto operator()(Rule<Predicate, Value> rule, Args... args) const
+        -> decltype(InvokeHelper<Value>::inv(rule.value,var))
     {
-        return match_helper(*this,vp,args...);
+        return pick_helper(*this,rule,args...);
     }
 };
 
-template<typename P>
-struct When { P const p; };
+template<typename Predicate>
+struct When { Predicate const predicate; };
 
-template<typename P, typename Then>
-auto operator >>=(When<P> const w, Then const then) -> ValuePair<P,Then> const
+template<typename Predicate, typename Then>
+auto operator >>=(When<Predicate> const when, Then const then)
+    -> Rule<Predicate,Then> const
 {
-    return ValuePair<P,Then>{w.p,then};
+    return Rule<Predicate,Then>{when.predicate,then};
 }
 
-template<typename P, typename Then>
-auto operator >>(When<P> const w, Then const then) -> ValuePair<P,Invoke<Then>> const
+template<typename Predicate, typename Then>
+auto operator >>(When<Predicate> const when, Then const then)
+    -> Rule<Predicate,Invoke<Then>> const
 {
-    return ValuePair<P,Invoke<Then>>{w.p,Invoke<Then>{then}};
+    return Rule<Predicate,Invoke<Then>>{when.predicate,Invoke<Then>{then}};
 }
 
 // Specialization for expression nodes
 template<typename L, typename R, typename Op> struct ENode;
-template<typename P, typename L, typename R, typename Op>
-auto operator >>=(When<P> const w, ENode<L,R,Op> const then)
-    -> ValuePair<P,Invoke<ENode<L,R,Op>>> const
+template<typename Predicate, typename L, typename R, typename Op>
+auto operator >>=(When<Predicate> const when, ENode<L,R,Op> const then)
+    -> Rule<Predicate,Invoke<ENode<L,R,Op>>> const
 {
-    return ValuePair<P,Invoke<ENode<L,R,Op>>>{w.p,Invoke<ENode<L,R,Op>>{then}};
+    return Rule<Predicate,Invoke<ENode<L,R,Op>>>{
+        when.predicate,Invoke<ENode<L,R,Op>>{then}
+    };
 }
 
 
 
 } // namespace fn_
 
-template<typename K>
-auto pick(K t) -> fn_::Pick<K> const { return fn_::Pick<K>{t}; }
+template<typename Var>
+auto pick(Var var) -> fn_::Pick<Var> const { return fn_::Pick<Var>{var}; }
 
-template<typename P>
-auto when(P p) -> fn_::When<P> const { return fn_::When<P>{p}; }
+template<typename Predicate>
+auto when(Predicate p) -> fn_::When<Predicate> const { return fn_::When<Predicate>{p}; }
 
 static auto const default_to = when(fn_::DefaultTo());
 
