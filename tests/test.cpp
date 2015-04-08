@@ -1386,7 +1386,7 @@ TEST(Classify,pick)
 
     {
         auto const f = [](int x){return pick(x)(
-            when(_ > 3 && _ < 7) <<= (_*2),
+            when(_ > 3 && _ < 7) >>= (_*2),
             default_to >>= 0
         );};
         EXPECT_EQ(0 ,f(0 ));

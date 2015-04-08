@@ -83,11 +83,16 @@ auto operator >>(When<P> const w, Then const then) -> ValuePair<P,Invoke<Then>> 
     return ValuePair<P,Invoke<Then>>{w.p,Invoke<Then>{then}};
 }
 
-template<typename P, typename Then>
-auto operator <<=(When<P> const w, Then const then) -> ValuePair<P,Invoke<Then>> const
+// Specialization for expression nodes
+template<typename L, typename R, typename Op> struct ENode;
+template<typename P, typename L, typename R, typename Op>
+auto operator >>=(When<P> const w, ENode<L,R,Op> const then)
+    -> ValuePair<P,Invoke<ENode<L,R,Op>>> const
 {
-    return ValuePair<P,Invoke<Then>>{w.p,Invoke<Then>{then}};
+    return ValuePair<P,Invoke<ENode<L,R,Op>>>{w.p,Invoke<ENode<L,R,Op>>{then}};
 }
+
+
 
 } // namespace fn_
 
