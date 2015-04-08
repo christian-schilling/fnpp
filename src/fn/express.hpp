@@ -113,7 +113,7 @@ auto operator OP_(ENode<RL,RR,ROp> rnode)\
         ENode<Placeholder,Placeholder,Placeholder>,\
         ENode<RL,RR,ROp>,\
         NAME_\
-    >{{},rnode,NAME_()};\
+    >{{{},{},{}},rnode,NAME_()};\
 }
 
 FN_MAKE_UNARY_OP(negate,!)
