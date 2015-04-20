@@ -33,6 +33,76 @@ goes_from_start_to_the_upper_limit_not_including_the_limit)
     EXPECT_EQ(5,count);
 }
 
+TEST(A_range,
+advances_by_a_step_size)
+{
+    {
+        std::vector<int> expected{5,8,11,14,17};
+        auto it = range(5,20,3);
+        auto count = 0;
+        for(auto i: it){
+            EXPECT_EQ(expected[count],i);
+            count++;
+        }
+        EXPECT_EQ(5,count);
+    }
+
+    {
+        std::vector<int> expected{5,8,11,14,17};
+        auto it = range(5,19,3);
+        auto count = 0;
+        for(auto i: it){
+            EXPECT_EQ(expected[count],i);
+            count++;
+        }
+        EXPECT_EQ(5,count);
+    }
+
+    {
+        std::vector<int> expected{5,8,11,14,17};
+        auto it = range(5,18,3);
+        auto count = 0;
+        for(auto i: it){
+            EXPECT_EQ(expected[count],i);
+            count++;
+        }
+        EXPECT_EQ(5,count);
+    }
+
+    {
+        std::vector<int> expected{10,6,2};
+        auto it = range(10,0,-4);
+        auto count = 0;
+        for(auto i: it){
+            EXPECT_EQ(expected[count],i);
+            count++;
+        }
+        EXPECT_EQ(3,count);
+    }
+
+    {
+        std::vector<int> expected{10,6,2};
+        auto it = range(10,1,-4);
+        auto count = 0;
+        for(auto i: it){
+            EXPECT_EQ(expected[count],i);
+            count++;
+        }
+        EXPECT_EQ(3,count);
+    }
+
+    {
+        std::vector<int> expected{10,6,2};
+        auto it = range(10,-1,-4);
+        auto count = 0;
+        for(auto i: it){
+            EXPECT_EQ(expected[count],i);
+            count++;
+        }
+        EXPECT_EQ(3,count);
+    }
+}
+
 
 TEST(The_map_function,
 applies_a_functor_to_all_elements_of_an_iterator)

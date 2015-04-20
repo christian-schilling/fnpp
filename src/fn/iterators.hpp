@@ -67,6 +67,13 @@ public:
         to(to)
     {}
 
+    Range(T const& from, T const& to, T const& step):
+        from(from,step),
+        // choose an end that will not get skipped when
+        // advancing by 'step'
+        to(((to-from)%step) ? to + (step-(to-from)%step) : to,step)
+    {}
+
     IT const& begin() const
     {
         return from;
