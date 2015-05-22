@@ -27,6 +27,17 @@ struct ENode
 
     template<typename V>
     auto operator()(V v) const -> decltype(op(l,r,v)) { return op(l,r,v); }
+
+    auto in() const -> ENode<Placeholder,Placeholder,Constant<bool>>
+    {
+        return {{},{},false};
+    }
+
+    template<typename T, typename... Args>
+    auto in(T t, Args... args) const -> decltype(*this == t || this->in(args...))
+    {
+        return *this == t || this->in(args...);
+    }
 };
 
 

@@ -1549,6 +1549,18 @@ TEST(Express,complex_expressions)
     EXPECT_EQ("hello world",s(" world"));
 }
 
+TEST(Express,in)
+{
+    EXPECT_FALSE(_.in()(8));
+    EXPECT_FALSE(_.in()(9));
+
+    EXPECT_TRUE(_.in(8)(8));
+    EXPECT_FALSE(_.in(8)(9));
+
+    EXPECT_TRUE(_.in(8,7)(8));
+    EXPECT_FALSE(_.in(8,7)(9));
+}
+
 TEST(Synchronized,guard_object_const)
 {
     lock_count = 0;
