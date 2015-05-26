@@ -8,6 +8,7 @@
 #include "fn/element.hpp"
 #include "fn/pick.hpp"
 #include "fn/express.hpp"
+#include "fn/slice.hpp"
 
 /*
  * Some macros to make optional<T> usable with complex types.
