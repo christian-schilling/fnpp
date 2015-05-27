@@ -1653,26 +1653,26 @@ TEST(slice,creation_from_std_vector)
 }
 
 
-TEST(slice,broadcast_assignment)
+TEST(slice,fill)
 {
     uint8_t buf[6] = {0,1,2,3,4,100};
     auto s5 = slice<uint8_t,5>::from_pointer(buf);
     auto s4 = slice<uint8_t,4>(s5.offset<1>());
-    s4 = 11;
+    s4.fill(11);
 
     EXPECT_EQ(11,~s5[3]);
     EXPECT_EQ(11,~s4[3]);
     EXPECT_EQ(0,~s5[0]);
 }
 
-TEST(slice,fixed_memcpy_assignment_same_size)
+TEST(slice,fixed_copysame_size)
 {
     uint8_t buf0[6] = {0,1,2,3,4,5};
     uint8_t buf1[6] = {9,8,7,6,5,4};
     auto s0 = slice<uint8_t,5>::from_pointer(buf0);
     auto s1 = slice<uint8_t,5>::from_pointer(buf1);
 
-    s0 = s1;
+    s0.copy(s1);
 
     EXPECT_EQ(9,buf0[0]);
     EXPECT_EQ(8,buf0[1]);
@@ -1682,14 +1682,14 @@ TEST(slice,fixed_memcpy_assignment_same_size)
     EXPECT_EQ(5,buf0[5]);
 }
 
-TEST(slice,fixed_memcpy_assignment_different_size)
+TEST(slice,fixed_copydifferent_size)
 {
     uint8_t buf0[6] = {0,1,2,3,4,5};
     uint8_t buf1[6] = {9,8,7,6,5,4};
     auto s0 = slice<uint8_t,5>::from_pointer(buf0);
     auto s1 = slice<uint8_t,6>(buf1);
 
-    s0 = s1;
+    s0.copy(s1);
 
     EXPECT_EQ(9,buf0[0]);
     EXPECT_EQ(8,buf0[1]);
@@ -1700,14 +1700,14 @@ TEST(slice,fixed_memcpy_assignment_different_size)
 }
 
 
-TEST(slice,dynamic_memcpy_assignment_same_size)
+TEST(slice,dynamic_copysame_size)
 {
     uint8_t buf0[6] = {0,1,2,3,4,5};
     uint8_t buf1[6] = {9,8,7,6,5,4};
     auto s0 = slice<uint8_t>(buf0,5);
     auto s1 = slice<uint8_t>(buf1,5);
 
-    s0 = s1;
+    s0.copy(s1);
 
     EXPECT_EQ(9,buf0[0]);
     EXPECT_EQ(8,buf0[1]);
@@ -1717,14 +1717,14 @@ TEST(slice,dynamic_memcpy_assignment_same_size)
     EXPECT_EQ(5,buf0[5]);
 }
 
-TEST(slice,dynamic_memcpy_assignment_different_size)
+TEST(slice,dynamic_copydifferent_size)
 {
     uint8_t buf0[6] = {0,1,2,3,4,5};
     uint8_t buf1[6] = {9,8,7,6,5,4};
     auto s0 = slice<uint8_t>(buf0,5);
     auto s1 = slice<uint8_t>(buf1,3);
 
-    s0 = s1;
+    s0.copy(s1);
 
     EXPECT_EQ(9,buf0[0]);
     EXPECT_EQ(8,buf0[1]);
@@ -1775,6 +1775,38 @@ TEST(slice,fixed_to_dynamic)
         auto ds = slice<uint8_t>(fs);
         EXPECT_EQ(5,ds.size());
     }
+}
+
+TEST(slice,reassign_fixed)
+{
+    uint8_t buf0[6] = {0,1,2,3,4,5};
+    uint8_t buf1[6] = {9,8,7,6,5,4};
+
+    auto s = slice<uint8_t,4>(buf0);
+
+    EXPECT_EQ(0,s.at<0>());
+    EXPECT_EQ(1,s.at<1>());
+
+    s = slice<uint8_t,4>(buf1);
+
+    EXPECT_EQ(9,s.at<0>());
+    EXPECT_EQ(8,s.at<1>());
+}
+
+TEST(slice,reassign_dynamic)
+{
+    uint8_t buf0[6] = {0,1,2,3,4,5};
+    uint8_t buf1[6] = {9,8,7,6,5,4};
+
+    auto s = slice<uint8_t>(buf0,4);
+
+    EXPECT_EQ(0,~s[0]);
+    EXPECT_EQ(1,~s[1]);
+
+    s = slice<uint8_t>(buf1,4);
+
+    EXPECT_EQ(9,~s[0]);
+    EXPECT_EQ(8,~s[1]);
 }
 
 struct Structure

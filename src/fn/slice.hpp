@@ -36,7 +36,7 @@ public:
     using value_type = T;
 
 private:
-    T* const _data;
+    T* _data;
 
     template<typename O_T, size_t O_S>
     friend class slice;
@@ -49,9 +49,12 @@ private:
 
 public:
 
-    slice(T(&d)[S]):
+    template<size_t OS>
+    slice(T(&d)[OS]):
         slice(d,0)
-    {}
+    {
+        static_assert(S <= OS,"fn::slice: source array to small");
+    }
 
     static slice from_pointer(T* const d)
     {
@@ -63,6 +66,12 @@ public:
         slice(other._data,0)
     {
         static_assert(S <= O_S,"fn::slice: target to small");
+    }
+
+    slice& operator=(slice const& o)
+    {
+        _data = o._data;
+        return *this;
     }
 
     template<size_t O>
@@ -127,16 +136,15 @@ public:
         return {*this,size()};
     }
 
-    slice& operator=(T const& v)
+    slice& fill(T const& v)
     {
         for(auto& x: *this){
             x = v;
         }
-
         return *this;
     }
 
-    slice& operator=(slice const& o)
+    slice& copy(slice const& o)
     {
         for(auto&& i: range(S)){
             _data[i] = o._data[i];
@@ -145,8 +153,10 @@ public:
     }
 
     template<typename RT, size_t C=0>
-    auto reinterpret_as() 
-        -> slice<RT,(C==0) ? (S*sizeof(T))/sizeof(RT) : C>
+    auto reinterpret_as()
+        -> decltype(slice<RT,(C==0) ? (S*sizeof(T))/sizeof(RT) : C>::from_pointer(
+            reinterpret_cast<RT*>(_data)
+        ))
     {
         static_assert(
             ((C==0) ? (S*sizeof(T))/sizeof(RT) : C) * sizeof(RT)
@@ -168,8 +178,8 @@ public:
     using value_type = T;
 
 private:
-    size_t const _size;
-    T* const _data;
+    size_t _size;
+    T* _data;
     friend class slice_IT<slice>;
 
 public:
@@ -192,6 +202,13 @@ public:
     slice(V& v):
         slice(v.data(),v.size())
     {}
+
+    slice& operator=(slice const& o)
+    {
+        _data = o._data;
+        _size = o._size;
+        return *this;
+    }
 
     optional<T&> operator[](size_t const i)
     {
@@ -226,14 +243,15 @@ public:
         return {*this,size()};
     }
 
-    slice& operator=(T const& v)
+    slice& fill(T const& v)
     {
         for(auto&& x: *this){
             x = v;
         }
+        return *this;
     }
 
-    slice& operator=(slice const& o)
+    slice& copy(slice const& o)
     {
         for(auto&& i: range(size() < o.size() ? size() : o.size())){
             _data[i] = o._data[i];
