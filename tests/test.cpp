@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <cstdio>
 #include <fn++.hpp>
 #include <vector>
 #include <map>
@@ -292,10 +292,6 @@ can_be_defaulted_to_a_reference)
     EXPECT_EQ(1,i);
     EXPECT_EQ(2,j);
     EXPECT_EQ(3,ni | 3);
-
-    optional<int const&> ci{4};
-
-    EXPECT_EQ(4,ci | 3);
 }
 
 inline extern size_t f(size_t i)

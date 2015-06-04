@@ -30,7 +30,13 @@ struct ENode
 
     auto in() const -> ENode<Placeholder,Placeholder,Constant<bool>>
     {
-        return {{},{},false};
+        return {{},{},{false}};
+    }
+
+    template<typename T>
+    auto in(T t) const -> decltype(*this == t)
+    {
+        return *this == t;
     }
 
     template<typename T, typename... Args>

@@ -4,7 +4,7 @@ env = Environment()
 import os
 env['ENV']['TERM'] = os.environ['TERM']
 
-env["CXX"] = os.environ["CXX"]
+env["CXX"] = os.environ.get("CXX","clang++")
 
 env.Append(
     CPPPATH=[
