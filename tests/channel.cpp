@@ -10,7 +10,7 @@ using namespace fn;
 
 TEST_CASE("Channel [int]")
 {
-    auto channel = Channel<int,3>();
+    auto channel = Channel<int>(3);
     REQUIRE_FALSE(channel.rx.recv().valid());
 
     SECTION("send one message")
@@ -93,7 +93,7 @@ TEST_CASE("Channel [int]")
 
 TEST_CASE("Channel [unique_ptr]")
 {
-    auto channel = Channel<std::unique_ptr<int>,3>();
+    auto channel = Channel<std::unique_ptr<int>>(3);
     REQUIRE_FALSE(channel.rx.recv().valid());
 
     SECTION("send one message")
@@ -140,7 +140,13 @@ TEST_CASE("Channel [unique_ptr]")
 
 TEST_CASE("Ring")
 {
-    fn_::Ring<int,3> queue;
+    struct {
+        fn_::Ring<int> queue{3};
+        int data[4];
+    } s;
+
+    auto& queue = s.queue;
+
     CHECK_FALSE(queue.pop());
     CHECK(queue.empty());
 
@@ -195,7 +201,12 @@ TEST_CASE("Ring")
 
 TEST_CASE("Ring remove_if")
 {
-    fn_::Ring<int,5> queue;
+    struct {
+        fn_::Ring<int> queue{5};
+        int data[6];
+    } s;
+
+    auto& queue = s.queue;
     CHECK(queue.empty());
 
     new (queue.push()) int(1);

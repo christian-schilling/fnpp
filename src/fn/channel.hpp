@@ -8,24 +8,25 @@ namespace fn{
 
 namespace fn_ {
 
-template<typename T, size_t N_>
-class Ring
+template<typename T>
+struct Ring
 {
-    auto static const N = N_ + 1;
-
-    size_t p0 = 0;
-    size_t p1 = 0;
-
-    struct T_mem { uint8_t mem[sizeof(T)]; };
-    T_mem data[N];
-
-public:
-
     std::mutex mutex;
+    size_t const size;
+
+    size_t write_pos = 0;
+    size_t read_pos = 0;
+
+    T* data()
+    {
+        return reinterpret_cast<T*>(this+1);
+    }
 
     Ring(Ring const&) = delete;
 
-    Ring() {}
+    Ring(size_t const size):
+        size(size+1)
+    {}
 
     Ring operator==(Ring&& o)
     {
@@ -36,15 +37,15 @@ public:
         }
     };
 
-    bool empty() const { return p0 == p1; }
-    bool full() const { return (p0+1) % N == p1; }
+    bool empty() const { return write_pos == read_pos; }
+    bool full() const { return (write_pos+1) % size == read_pos; }
 
     T* push()
     {
         if(!full()){
-            auto const p = p0;
-            p0 = (p0 + 1) % N;
-            return reinterpret_cast<T*>(data+p);
+            auto const p = write_pos;
+            write_pos = (write_pos + 1) % size;
+            return data()+p;
         }
         return nullptr;
     }
@@ -52,9 +53,9 @@ public:
     T* pop()
     {
         if(!empty()){
-            auto const p = p1;
-            p1 = (p1 + 1) % N;
-            return reinterpret_cast<T*>(data+p);
+            auto const p = read_pos;
+            read_pos = (read_pos + 1) % size;
+            return data()+p;
         }
         return nullptr;
     }
@@ -62,38 +63,27 @@ public:
     template<typename F>
     void remove_if(F f)
     {
-        auto from = p1;
-        auto to = p1;
+        auto from = read_pos;
+        auto to = read_pos;
 
-        while(from < p0){
+        while(from < write_pos){
             if(from != to){
-                reinterpret_cast<T*>(data+to)->~T();
-                new (data+to) T(fn_::move(*reinterpret_cast<T*>(data+from)));
-                reinterpret_cast<T*>(data+from)->~T();
+                data()[to].~T();
+                new (data()+to) T(fn_::move(data()[from]));
+                data()[from].~T();
             }
-            if(!f(*reinterpret_cast<T*>(data+from))){
-                to = (to + 1) % N;
+            if(!f(data()[from])){
+                to = (to + 1) % size;
             }
-            from = (from + 1) % N;
+            from = (from + 1) % size;
         }
-        p0 = to;
+        write_pos = to;
     }
 };
 
-template<typename Mutex>
-struct Guard
-{
-    Mutex& mutex;
-    Guard(Mutex& mutex): mutex(mutex) { mutex.lock(); }
-    ~Guard() { mutex.unlock(); }
-};
-
-template<typename Mutex>
-auto guard(Mutex& mutex) -> Guard<Mutex> { return {mutex}; }
-
 }
 
-template<typename T, size_t N>
+template<typename T>
 struct Channel
 {
     class Sender;
@@ -106,13 +96,11 @@ struct Channel
             queue_mem(queue_mem)
         {}
 
-        optional<Sender&> tx;
-
         std::shared_ptr<uint8_t> queue_mem;
 
-        fn_::Ring<T,N>& queue()
+        fn_::Ring<T>& queue()
         {
-            return *reinterpret_cast<fn_::Ring<T,N>*>(queue_mem.get());
+            return *reinterpret_cast<fn_::Ring<T>*>(queue_mem.get());
         }
 
     public:
@@ -129,7 +117,7 @@ struct Channel
         optional<T> recv()
         {
             if(!queue_mem){ return {}; }
-            auto guard = fn_::guard(queue().mutex);
+            std::lock_guard<std::mutex> quard(queue().mutex);
 
             auto const p = queue().pop();
             if(p){
@@ -144,7 +132,7 @@ struct Channel
         void remove_if(F f)
         {
             if(!queue_mem){ return; }
-            auto guard = fn_::guard(queue().mutex);
+            std::lock_guard<std::mutex> quard(queue().mutex);
             queue().remove_if(f);
         }
 
@@ -156,9 +144,9 @@ struct Channel
 
         std::shared_ptr<uint8_t> queue_mem;
 
-        fn_::Ring<T,N>& queue()
+        fn_::Ring<T>& queue()
         {
-            return *reinterpret_cast<fn_::Ring<T,N>*>(queue_mem.get());
+            return *reinterpret_cast<fn_::Ring<T>*>(queue_mem.get());
         }
 
         Sender(std::shared_ptr<uint8_t> queue_mem):
@@ -174,7 +162,7 @@ struct Channel
         bool send(T v)
         {
             if(!queue_mem){ return false; }
-            auto guard = fn_::guard(queue().mutex);
+            std::lock_guard<std::mutex> quard(queue().mutex);
 
             auto const p = queue().push();
             if(p){
@@ -185,12 +173,18 @@ struct Channel
         }
     };
 
-    Channel():
-        queue_mem( new uint8_t[sizeof(fn_::Ring<T,N>)], []( uint8_t *p ) { delete[] p; } ),
+    Channel(size_t const size):
+        queue_mem(
+            new uint8_t[sizeof(fn_::Ring<T>)+sizeof(T)*(size+1)],
+            []( uint8_t *p ) {
+                reinterpret_cast<fn_::Ring<T>*>(p)->~Ring<T>();
+                delete[] p;
+            }
+        ),
         rx(queue_mem),
         tx(queue_mem)
     {
-        new (queue_mem.get()) fn_::Ring<T,N>;
+        new (queue_mem.get()) fn_::Ring<T>(size);
     }
 
     std::shared_ptr<uint8_t> queue_mem;
