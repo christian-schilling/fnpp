@@ -1,6 +1,8 @@
 #ifndef _4fac367e_60d1_4c71_8690_910625d21ebd
 #define _4fac367e_60d1_4c71_8690_910625d21ebd
 
+#include <mutex>
+#include <memory>
 
 namespace fn{
 
@@ -23,7 +25,7 @@ public:
 
     Ring() {}
 
-    Ring(Ring&& o)
+    Ring operator==(Ring&& o)
     {
         T* tmp;
         while((tmp = o.pop())){
@@ -76,6 +78,17 @@ public:
     }
 };
 
+template<typename Mutex>
+struct Guard
+{
+    Mutex& mutex;
+    Guard(Mutex& mutex): mutex(mutex) { mutex.lock(); }
+    ~Guard() { mutex.unlock(); }
+};
+
+template<typename Mutex>
+auto guard(Mutex& mutex) -> Guard<Mutex> { return {mutex}; }
+
 }
 
 template<typename T, size_t N>
@@ -90,15 +103,21 @@ struct Channel
         Receiver() {}
 
         optional<Sender&> tx;
+        std::shared_ptr<std::mutex> mutex;
 
     public:
 
         Receiver(Receiver const&) = delete;
 
         Receiver(Receiver&& o):
-            tx(fn_::move(o.tx)),
-            queue(fn_::move(o.queue))
+            mutex(fn_::move(o.mutex))
         {
+            if(!mutex){ return; }
+            auto guard = fn_::guard(*mutex);
+
+            tx = fn_::move(o.tx);
+            queue = fn_::move(o.queue);
+
             tx >>[&](Sender& tx){
                 tx.rx = *this;
             };
@@ -107,6 +126,9 @@ struct Channel
 
         optional<T> recv()
         {
+            if(!mutex){ return {}; }
+            auto guard = fn_::guard(*mutex);
+
             auto const p = queue.pop();
             if(p){
                 optional<T> tmp(fn_::move(*p));
@@ -119,6 +141,8 @@ struct Channel
         template<typename F>
         void remove_if(F f)
         {
+            if(!mutex){ return; }
+            auto guard = fn_::guard(*mutex);
             queue.remove_if(f);
         }
 
@@ -130,6 +154,7 @@ struct Channel
         friend struct Channel;
 
         optional<Receiver&> rx;
+        std::shared_ptr<std::mutex> mutex;
 
         Sender(Receiver& rx):
             rx(rx)
@@ -142,13 +167,20 @@ struct Channel
         Sender(Sender const&) = delete;
 
         Sender(Sender&& o):
-            rx(fn_::move(o.rx))
+            mutex(fn_::move(o.mutex))
         {
+            if(!mutex){ return; }
+            auto guard = fn_::guard(*mutex);
+
+            rx = fn_::move(o.rx);
             o.rx = {};
         }
 
         bool send(T v)
         {
+            if(!mutex){ return false; }
+            auto guard = fn_::guard(*mutex);
+
             return rx >>[&](Receiver& rx){
                 auto const p = rx.queue.push();
                 if(p){
@@ -162,7 +194,9 @@ struct Channel
 
     Channel():
         tx(rx)
-    {}
+    {
+        tx.mutex = rx.mutex = std::make_shared<std::mutex>();
+    }
 
     Receiver rx;
     Sender tx;
