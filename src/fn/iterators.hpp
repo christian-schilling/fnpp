@@ -142,6 +142,63 @@ public:
     }
 };
 
+template<typename G, typename OtherIT>
+class Cycle
+{
+    class IT
+    {
+    private:
+        OtherIT other_it;
+        OtherIT begin_it;
+        OtherIT end_it;
+
+    public:
+        IT(OtherIT other_it, OtherIT end_it):
+            other_it(other_it),
+            begin_it(other_it),
+            end_it(end_it)
+        {}
+
+        bool operator!=(IT& other)
+        {
+            return other_it != other.other_it;
+        }
+
+        IT const& operator++()
+        {
+            ++other_it;
+            if(!(other_it != end_it)){
+                other_it = begin_it;
+            }
+            return *this;
+        }
+
+        auto operator*() const -> decltype(*other_it)
+        {
+            return *other_it;
+        }
+    };
+
+    IT const from;
+    IT const to;
+
+public:
+    Cycle(G const& g):
+        from(g.begin(),g.end()),
+        to(g.end(),g.end())
+    {}
+
+    IT const& begin() const
+    {
+        return from;
+    }
+
+    IT const& end() const
+    {
+        return to;
+    }
+};
+
 /*
  * Makes begin/end iterator pairs usable with range based for
  */
@@ -347,6 +404,13 @@ auto map(FN const& fn,G const& g)
     ->fn_::Map<FN,G,typename fn_::noconst<decltype(g.begin())>::T>
 {
     return fn_::Map<FN,G,typename fn_::noconst<decltype(g.begin())>::T>(fn,g);
+}
+
+template<typename G>
+auto cycle(G const& g)
+    ->fn_::Cycle<G,typename fn_::noconst<decltype(g.begin())>::T>
+{
+    return fn_::Cycle<G,typename fn_::noconst<decltype(g.begin())>::T>(g);
 }
 
 template<typename OtherIT>

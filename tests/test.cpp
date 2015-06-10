@@ -209,6 +209,21 @@ allows_parallel_iteration_over_two_iterators)
     EXPECT_EQ(count,input.size());
 }
 
+TEST(The_cycle_function,
+makes_an_infinite_iterator)
+{
+    std::vector<int> expected{0,1,2,0,1,2,0,1,2,0,1,2};
+    int i = 0;
+    for(auto const& item : cycle(range(3))){
+        EXPECT_EQ(expected[i],item) << i;
+        i++;
+        if(i > 10){
+            break;
+        }
+    }
+    EXPECT_EQ(11,i);
+}
+
 TEST(The_enumerate_function,
 allows_iteration_with_an_index)
 {
