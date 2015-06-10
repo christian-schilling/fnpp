@@ -2,6 +2,7 @@
 #define _4fac367e_60d1_4c71_8690_910625d21ebd
 
 #include <mutex>
+#include <condition_variable>
 #include <memory>
 
 namespace fn{
@@ -12,6 +13,7 @@ template<typename T>
 struct Ring
 {
     std::mutex mutex;
+    std::condition_variable cv;
     size_t const size;
 
     size_t write_pos = 0;
@@ -86,13 +88,13 @@ struct Ring
 template<typename T>
 struct Channel
 {
-    class Sender;
+    class Send;
 
-    class Receiver
+    class Receive
     {
         friend struct Channel;
 
-        Receiver(std::shared_ptr<uint8_t> queue_mem):
+        Receive(std::shared_ptr<uint8_t> queue_mem):
             queue_mem(queue_mem)
         {}
 
@@ -105,19 +107,22 @@ struct Channel
 
     public:
 
-        Receiver(Receiver const&) = delete;
+        Receive(Receive const&) = delete;
 
-        Receiver(Receiver&& o):
+        Receive(Receive&& o):
             queue_mem(fn_::move(o.queue_mem))
         {
             o.queue_mem = nullptr;
         }
 
-
-        optional<T> recv()
+        optional<T> operator()(uint64_t const timeout_ms)
         {
             if(!queue_mem){ return {}; }
-            std::lock_guard<std::mutex> quard(queue().mutex);
+            std::unique_lock<std::mutex> lock(queue().mutex);
+
+            if(queue().empty()){
+                queue().cv.wait_for(lock,std::chrono::milliseconds(timeout_ms));
+            }
 
             auto const p = queue().pop();
             if(p){
@@ -138,7 +143,7 @@ struct Channel
 
     };
 
-    class Sender
+    class Send
     {
         friend struct Channel;
 
@@ -149,26 +154,29 @@ struct Channel
             return *reinterpret_cast<fn_::Ring<T>*>(queue_mem.get());
         }
 
-        Sender(std::shared_ptr<uint8_t> queue_mem):
+        Send(std::shared_ptr<uint8_t> queue_mem):
             queue_mem(queue_mem)
         {}
 
     public:
 
-        Sender(Sender const& o):
+        Send(Send const& o):
             queue_mem(o.queue_mem)
         {}
 
-        bool send(T v)
+        bool operator()(T v)
         {
             if(!queue_mem){ return false; }
-            std::lock_guard<std::mutex> quard(queue().mutex);
+            queue().mutex.lock();
 
             auto const p = queue().push();
             if(p){
                 new (p) T(fn_::move(v));
+                queue().mutex.unlock();
+                queue().cv.notify_one();
                 return true;
             }
+            queue().mutex.unlock();
             return false;
         }
     };
@@ -181,15 +189,15 @@ struct Channel
                 delete[] p;
             }
         ),
-        rx(queue_mem),
-        tx(queue_mem)
+        receive(queue_mem),
+        send(queue_mem)
     {
         new (queue_mem.get()) fn_::Ring<T>(size);
     }
 
     std::shared_ptr<uint8_t> queue_mem;
-    Receiver rx;
-    Sender tx;
+    Receive receive;
+    Send send;
 };
 
 }

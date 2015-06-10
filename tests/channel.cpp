@@ -2,6 +2,7 @@
 #include <vector>
 #include <map>
 #include <utility>
+#include <thread>
 #include "catch.hpp"
 
 #include <fn++.hpp>
@@ -11,130 +12,150 @@ using namespace fn;
 TEST_CASE("Channel [int]")
 {
     auto channel = Channel<int>(3);
-    REQUIRE_FALSE(channel.rx.recv().valid());
+    REQUIRE_FALSE(channel.receive(0).valid());
 
     SECTION("send one message")
     {
-        channel.tx.send(123);
-        CHECK(123 == ~channel.rx.recv());
-        REQUIRE_FALSE(channel.rx.recv().valid());
+        channel.send(123);
+        CHECK(123 == ~channel.receive(0));
+        REQUIRE_FALSE(channel.receive(0).valid());
     }
 
     SECTION("send two messages")
     {
-        CHECK(channel.tx.send(123));
-        CHECK(channel.tx.send(124));
-        CHECK(123 == ~channel.rx.recv());
-        CHECK(124 == ~channel.rx.recv());
-        CHECK_FALSE(channel.rx.recv().valid());
+        CHECK(channel.send(123));
+        CHECK(channel.send(124));
+        CHECK(123 == ~channel.receive(0));
+        CHECK(124 == ~channel.receive(0));
+        CHECK_FALSE(channel.receive(0).valid());
     }
 
     SECTION("send more messages than fit")
     {
-        CHECK(channel.tx.send(123));
-        CHECK(channel.tx.send(124));
-        CHECK(channel.tx.send(125));
-        CHECK_FALSE(channel.tx.send(126));
-        CHECK(123 == ~channel.rx.recv());
-        CHECK(124 == ~channel.rx.recv());
-        CHECK(125 == ~channel.rx.recv());
-        CHECK_FALSE(channel.rx.recv().valid());
+        CHECK(channel.send(123));
+        CHECK(channel.send(124));
+        CHECK(channel.send(125));
+        CHECK_FALSE(channel.send(126));
+        CHECK(123 == ~channel.receive(0));
+        CHECK(124 == ~channel.receive(0));
+        CHECK(125 == ~channel.receive(0));
+        CHECK_FALSE(channel.receive(0).valid());
     }
 
     SECTION("copy sender")
     {
-        auto tx = channel.tx;
+        auto send = channel.send;
 
-        CHECK(channel.tx.send(2));
-        CHECK(tx.send(1));
+        CHECK(channel.send(2));
+        CHECK(send(1));
 
-        CHECK(2 == ~channel.rx.recv());
-        CHECK(1 == ~channel.rx.recv());
-        CHECK_FALSE(channel.rx.recv().valid());
+        CHECK(2 == ~channel.receive(0));
+        CHECK(1 == ~channel.receive(0));
+        CHECK_FALSE(channel.receive(0).valid());
     }
 
     SECTION("move receiver, then send")
     {
-        auto rx = std::move(channel.rx);
+        auto receive = std::move(channel.receive);
 
-        CHECK(channel.tx.send(1));
+        CHECK(channel.send(1));
 
-        CHECK_FALSE(channel.rx.recv().valid());
+        CHECK_FALSE(channel.receive(0).valid());
 
-        CHECK(1 == ~rx.recv());
-        CHECK_FALSE(rx.recv().valid());
+        CHECK(1 == ~receive(0));
+        CHECK_FALSE(receive(0).valid());
     }
 
     SECTION("send, then move receiver")
     {
-        CHECK(channel.tx.send(1));
-        auto rx = std::move(channel.rx);
+        CHECK(channel.send(1));
+        auto receive = std::move(channel.receive);
 
-        CHECK_FALSE(channel.rx.recv().valid());
+        CHECK_FALSE(channel.receive(0).valid());
 
-        CHECK(1 == ~rx.recv());
-        CHECK_FALSE(rx.recv().valid());
+        CHECK(1 == ~receive(0));
+        CHECK_FALSE(receive(0).valid());
     }
 
     SECTION("remove elements")
     {
-        CHECK(channel.tx.send(1));
-        CHECK(channel.tx.send(2));
-        CHECK(channel.tx.send(3));
+        CHECK(channel.send(1));
+        CHECK(channel.send(2));
+        CHECK(channel.send(3));
 
-        channel.rx.remove_if([](int const& i) -> bool {
+        channel.receive.remove_if([](int const& i) -> bool {
             return i % 2;
         });
 
-        CHECK(2 == ~channel.rx.recv());
-        CHECK_FALSE(channel.rx.recv().valid());
+        CHECK(2 == ~channel.receive(0));
+        CHECK_FALSE(channel.receive(0).valid());
+    }
+
+    SECTION("send one message to thread, receive gets called after send")
+    {
+        auto thread = std::thread([&]{
+            CHECK(123 == ~channel.receive(10000));
+        });
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        channel.send(123);
+        thread.join();
+    }
+
+    SECTION("send one message to thread, receive gets called before send")
+    {
+        auto thread = std::thread([&]{
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            CHECK(123 == ~channel.receive(10000));
+        });
+        channel.send(123);
+        thread.join();
     }
 }
 
 TEST_CASE("Channel [unique_ptr]")
 {
     auto channel = Channel<std::unique_ptr<int>>(3);
-    REQUIRE_FALSE(channel.rx.recv().valid());
+    REQUIRE_FALSE(channel.receive(0).valid());
 
     SECTION("send one message")
     {
         auto up = std::unique_ptr<int>(new int);
         *up = 1234;
 
-        channel.tx.send(std::move(up));
+        channel.send(std::move(up));
         CHECK(nullptr == up);
 
-        auto r = channel.rx.recv();
+        auto r = channel.receive(0);
         CHECK(r.valid());
         r >>[&](std::unique_ptr<int>& i){
             REQUIRE(i != nullptr);
             CHECK(1234 == *i);
         };
 
-        REQUIRE_FALSE(channel.rx.recv().valid());
+        REQUIRE_FALSE(channel.receive(0).valid());
     }
 
     SECTION("move receiver, then send")
     {
-        auto rx = std::move(channel.rx);
+        auto receive = std::move(channel.receive);
 
-        CHECK(channel.tx.send(std::unique_ptr<int>(new int(1))));
+        CHECK(channel.send(std::unique_ptr<int>(new int(1))));
 
-        CHECK_FALSE(channel.rx.recv().valid());
+        CHECK_FALSE(channel.receive(0).valid());
 
-        CHECK(rx.recv().valid());
-        CHECK_FALSE(rx.recv().valid());
+        CHECK(receive(0).valid());
+        CHECK_FALSE(receive(0).valid());
     }
 
     SECTION("send, then move receiver")
     {
-        CHECK(channel.tx.send(std::unique_ptr<int>(new int(1))));
-        auto rx = std::move(channel.rx);
+        CHECK(channel.send(std::unique_ptr<int>(new int(1))));
+        auto receive = std::move(channel.receive);
 
-        CHECK_FALSE(channel.rx.recv().valid());
+        CHECK_FALSE(channel.receive(0).valid());
 
-        CHECK(rx.recv().valid());
-        CHECK_FALSE(rx.recv().valid());
+        CHECK(receive(0).valid());
+        CHECK_FALSE(receive(0).valid());
     }
 }
 
