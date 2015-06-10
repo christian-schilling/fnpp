@@ -17,6 +17,9 @@ env.Append(
         '-Wextra',
         '-Werror',
     ],
+    LIBS=[
+        'pthread',
+    ],
 )
 
 env.Program("runtests",source=Glob("tests/*.cpp"))

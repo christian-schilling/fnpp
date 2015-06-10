@@ -21,6 +21,8 @@ class Ring
 
 public:
 
+    std::mutex mutex;
+
     Ring(Ring const&) = delete;
 
     Ring() {}
@@ -100,36 +102,36 @@ struct Channel
     {
         friend struct Channel;
 
-        Receiver() {}
+        Receiver(std::shared_ptr<uint8_t> queue_mem):
+            queue_mem(queue_mem)
+        {}
 
         optional<Sender&> tx;
-        std::shared_ptr<std::mutex> mutex;
+
+        std::shared_ptr<uint8_t> queue_mem;
+
+        fn_::Ring<T,N>& queue()
+        {
+            return *reinterpret_cast<fn_::Ring<T,N>*>(queue_mem.get());
+        }
 
     public:
 
         Receiver(Receiver const&) = delete;
 
         Receiver(Receiver&& o):
-            mutex(fn_::move(o.mutex))
+            queue_mem(fn_::move(o.queue_mem))
         {
-            if(!mutex){ return; }
-            auto guard = fn_::guard(*mutex);
-
-            tx = fn_::move(o.tx);
-            queue = fn_::move(o.queue);
-
-            tx >>[&](Sender& tx){
-                tx.rx = *this;
-            };
+            o.queue_mem = nullptr;
         }
 
 
         optional<T> recv()
         {
-            if(!mutex){ return {}; }
-            auto guard = fn_::guard(*mutex);
+            if(!queue_mem){ return {}; }
+            auto guard = fn_::guard(queue().mutex);
 
-            auto const p = queue.pop();
+            auto const p = queue().pop();
             if(p){
                 optional<T> tmp(fn_::move(*p));
                 p->~T();
@@ -141,63 +143,57 @@ struct Channel
         template<typename F>
         void remove_if(F f)
         {
-            if(!mutex){ return; }
-            auto guard = fn_::guard(*mutex);
-            queue.remove_if(f);
+            if(!queue_mem){ return; }
+            auto guard = fn_::guard(queue().mutex);
+            queue().remove_if(f);
         }
 
-        fn_::Ring<T,N> queue;
     };
 
     class Sender
     {
         friend struct Channel;
 
-        optional<Receiver&> rx;
-        std::shared_ptr<std::mutex> mutex;
+        std::shared_ptr<uint8_t> queue_mem;
 
-        Sender(Receiver& rx):
-            rx(rx)
+        fn_::Ring<T,N>& queue()
         {
-            rx.tx = *this;
+            return *reinterpret_cast<fn_::Ring<T,N>*>(queue_mem.get());
         }
+
+        Sender(std::shared_ptr<uint8_t> queue_mem):
+            queue_mem(queue_mem)
+        {}
 
     public:
 
-        Sender(Sender const&) = delete;
-
-        Sender(Sender&& o):
-            mutex(fn_::move(o.mutex))
-        {
-            if(!mutex){ return; }
-            auto guard = fn_::guard(*mutex);
-
-            rx = fn_::move(o.rx);
-            o.rx = {};
-        }
+        Sender(Sender const& o):
+            queue_mem(o.queue_mem)
+        {}
 
         bool send(T v)
         {
-            if(!mutex){ return false; }
-            auto guard = fn_::guard(*mutex);
+            if(!queue_mem){ return false; }
+            auto guard = fn_::guard(queue().mutex);
 
-            return rx >>[&](Receiver& rx){
-                auto const p = rx.queue.push();
-                if(p){
-                    new (p) T(fn_::move(v));
-                    return true;
-                }
-                return false;
-            } | false;
+            auto const p = queue().push();
+            if(p){
+                new (p) T(fn_::move(v));
+                return true;
+            }
+            return false;
         }
     };
 
     Channel():
-        tx(rx)
+        queue_mem( new uint8_t[sizeof(fn_::Ring<T,N>)], []( uint8_t *p ) { delete[] p; } ),
+        rx(queue_mem),
+        tx(queue_mem)
     {
-        tx.mutex = rx.mutex = std::make_shared<std::mutex>();
+        new (queue_mem.get()) fn_::Ring<T,N>;
     }
 
+    std::shared_ptr<uint8_t> queue_mem;
     Receiver rx;
     Sender tx;
 };

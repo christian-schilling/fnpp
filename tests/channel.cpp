@@ -41,13 +41,14 @@ TEST_CASE("Channel [int]")
         CHECK_FALSE(channel.rx.recv().valid());
     }
 
-    SECTION("move sender")
+    SECTION("copy sender")
     {
-        auto tx = std::move(channel.tx);
+        auto tx = channel.tx;
 
-        CHECK_FALSE(channel.tx.send(2));
+        CHECK(channel.tx.send(2));
         CHECK(tx.send(1));
 
+        CHECK(2 == ~channel.rx.recv());
         CHECK(1 == ~channel.rx.recv());
         CHECK_FALSE(channel.rx.recv().valid());
     }
