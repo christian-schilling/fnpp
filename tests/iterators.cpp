@@ -247,5 +247,18 @@ TEST_CASE("The reduce function","does reduction")
 }
 
 
+TEST_CASE("The cycle function", "makes an infinite iterator")
+{
+    std::vector<int> expected{0,1,2,0,1,2,0,1,2,0,1,2};
+    int i = 0;
+    for(auto const& item : cycle(range(3))){
+        CHECK(expected[i] == item);
+        i++;
+        if(i > 10){
+            break;
+        }
+    }
+    CHECK(11 == i);
+}
 
 
