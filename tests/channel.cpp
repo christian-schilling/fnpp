@@ -161,104 +161,95 @@ TEST_CASE("Channel [unique_ptr]")
 
 TEST_CASE("Ring")
 {
-    struct {
-        fn_::Ring<int> queue{3};
-        int data[4];
-    } s;
+    auto queue = fn_::Ring<int>::create(3);
 
-    auto& queue = s.queue;
-
-    CHECK_FALSE(queue.pop());
-    CHECK(queue.empty());
+    CHECK_FALSE(queue->pop());
+    CHECK(queue->empty());
 
     SECTION("push once")
     {
-        new (queue.push()) int(7);
-        CHECK_FALSE(queue.empty());
-        CHECK(7 == *queue.pop());
-        CHECK_FALSE(queue.pop());
+        new (queue->push()) int(7);
+        CHECK_FALSE(queue->empty());
+        CHECK(7 == *queue->pop());
+        CHECK_FALSE(queue->pop());
     }
 
     SECTION("push twice")
     {
-        new (queue.push()) int(6);
-        CHECK_FALSE(queue.empty());
-        new (queue.push()) int(8);
-        CHECK_FALSE(queue.empty());
-        CHECK(6 == *queue.pop());
-        CHECK_FALSE(queue.empty());
-        CHECK(8 == *queue.pop());
-        CHECK(queue.empty());
+        new (queue->push()) int(6);
+        CHECK_FALSE(queue->empty());
+        new (queue->push()) int(8);
+        CHECK_FALSE(queue->empty());
+        CHECK(6 == *queue->pop());
+        CHECK_FALSE(queue->empty());
+        CHECK(8 == *queue->pop());
+        CHECK(queue->empty());
     }
 
     SECTION("push twice, twice")
     {
-        new (queue.push()) int(6);
-        new (queue.push()) int(8);
-        CHECK(6 == *queue.pop());
-        CHECK(8 == *queue.pop());
+        new (queue->push()) int(6);
+        new (queue->push()) int(8);
+        CHECK(6 == *queue->pop());
+        CHECK(8 == *queue->pop());
 
-        new (queue.push()) int(2);
-        new (queue.push()) int(3);
-        CHECK(2 == *queue.pop());
-        CHECK(3 == *queue.pop());
+        new (queue->push()) int(2);
+        new (queue->push()) int(3);
+        CHECK(2 == *queue->pop());
+        CHECK(3 == *queue->pop());
     }
 
     SECTION("overflow")
     {
-        new (queue.push()) int(1);
-        new (queue.push()) int(2);
-        new (queue.push()) int(3);
-        CHECK_FALSE(queue.push());
-        CHECK_FALSE(queue.push());
-        CHECK_FALSE(queue.push());
-        CHECK(1 == *queue.pop());
-        CHECK(2 == *queue.pop());
-        CHECK(3 == *queue.pop());
-        CHECK(queue.empty());
+        new (queue->push()) int(1);
+        new (queue->push()) int(2);
+        new (queue->push()) int(3);
+        CHECK_FALSE(queue->push());
+        CHECK_FALSE(queue->push());
+        CHECK_FALSE(queue->push());
+        CHECK(1 == *queue->pop());
+        CHECK(2 == *queue->pop());
+        CHECK(3 == *queue->pop());
+        CHECK(queue->empty());
     }
 
 };
 
 TEST_CASE("Ring remove_if")
 {
-    struct {
-        fn_::Ring<int> queue{5};
-        int data[6];
-    } s;
+    auto queue = fn_::Ring<int>::create(5);
 
-    auto& queue = s.queue;
-    CHECK(queue.empty());
+    CHECK(queue->empty());
 
-    new (queue.push()) int(1);
-    new (queue.push()) int(2);
-    new (queue.push()) int(3);
-    new (queue.push()) int(4);
+    new (queue->push()) int(1);
+    new (queue->push()) int(2);
+    new (queue->push()) int(3);
+    new (queue->push()) int(4);
 
     SECTION("remove none")
     {
-        queue.remove_if([](int const&) -> bool { return false; });
+        queue->remove_if([](int const&) -> bool { return false; });
 
-        CHECK(1 == *queue.pop());
-        CHECK(2 == *queue.pop());
-        CHECK(3 == *queue.pop());
-        CHECK(4 == *queue.pop());
-        CHECK(queue.empty());
+        CHECK(1 == *queue->pop());
+        CHECK(2 == *queue->pop());
+        CHECK(3 == *queue->pop());
+        CHECK(4 == *queue->pop());
+        CHECK(queue->empty());
     }
 
     SECTION("remove all")
     {
-        queue.remove_if([](int const&) -> bool { return true; });
+        queue->remove_if([](int const&) -> bool { return true; });
 
-        CHECK(queue.empty());
+        CHECK(queue->empty());
     }
 
     SECTION("remove uneven")
     {
-        queue.remove_if([](int const& x) -> bool { return x % 2; });
+        queue->remove_if([](int const& x) -> bool { return x % 2; });
 
-        CHECK(2 == *queue.pop());
-        CHECK(4 == *queue.pop());
-        CHECK(queue.empty());
+        CHECK(2 == *queue->pop());
+        CHECK(4 == *queue->pop());
+        CHECK(queue->empty());
     }
 }
