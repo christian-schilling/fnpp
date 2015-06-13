@@ -215,41 +215,62 @@ TEST_CASE("Ring")
 
 };
 
+struct M {
+    int value;
+    static int counter;
+
+    M(int value): value(value) { ++counter; }
+    ~M() { --counter; }
+
+    M(M const&) = delete;
+    M(M&& m): value(m.value) { ++counter; }
+};
+
+int M::counter = 0;
+
 TEST_CASE("Ring remove_if")
 {
-    auto queue = fn_::Ring<int>::create(5);
+    M::counter = 0;
+
+    auto queue = fn_::Ring<M>::create(5);
 
     CHECK(queue->empty());
+    CHECK(0 == M::counter);
 
-    new (queue->push()) int(1);
-    new (queue->push()) int(2);
-    new (queue->push()) int(3);
-    new (queue->push()) int(4);
+    new (queue->push()) M(1);
+    new (queue->push()) M(2);
+    new (queue->push()) M(3);
+    new (queue->push()) M(4);
+
+    CHECK(4 == M::counter);
 
     SECTION("remove none")
     {
-        queue->remove_if([](int const&) -> bool { return false; });
+        queue->remove_if([](M const&) -> bool { return false; });
 
-        CHECK(1 == *queue->pop());
-        CHECK(2 == *queue->pop());
-        CHECK(3 == *queue->pop());
-        CHECK(4 == *queue->pop());
+        CHECK(1 == queue->pop()->value);
+        CHECK(2 == queue->pop()->value);
+        CHECK(3 == queue->pop()->value);
+        CHECK(4 == queue->pop()->value);
         CHECK(queue->empty());
+        CHECK(4 == M::counter);
     }
 
     SECTION("remove all")
     {
-        queue->remove_if([](int const&) -> bool { return true; });
+        queue->remove_if([](M const&) -> bool { return true; });
 
         CHECK(queue->empty());
+        CHECK(0 == M::counter);
     }
 
     SECTION("remove uneven")
     {
-        queue->remove_if([](int const& x) -> bool { return x % 2; });
+        queue->remove_if([](M const& x) -> bool { return x.value % 2; });
 
-        CHECK(2 == *queue->pop());
-        CHECK(4 == *queue->pop());
+        CHECK(2 == queue->pop()->value);
+        CHECK(4 == queue->pop()->value);
         CHECK(queue->empty());
+        CHECK(2 == M::counter);
     }
 }

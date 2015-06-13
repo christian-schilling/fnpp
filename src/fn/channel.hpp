@@ -70,14 +70,16 @@ public:
             if(from != to){
                 data()[to].~T();
                 new (data()+to) T(fn_::move(data()[from]));
-                data()[from].~T();
             }
-            if(!f(data()[from])){
-                to = (to + 1) % size;
-            }
+            if(!f(data()[to])){ to = (to + 1) % size; }
             from = (from + 1) % size;
         }
         write_pos = to;
+
+        while(to < from) {
+            data()[to].~T();
+            to = (to + 1) % size;
+        }
     }
 
 private:
