@@ -28,7 +28,7 @@ move(T&& a)
  *  Additionally it works around a strange msvc internal compiler error.
  */
 template<class F, class T>
-static auto return_type(F&& f,T&& value)->decltype(f(value))
+static auto return_type(F f,T&& value)->decltype(f(value))
 {
     return f(value);
 }

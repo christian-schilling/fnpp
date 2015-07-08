@@ -456,7 +456,7 @@ namespace fn_ {
 template<typename T>
 struct return_cast {
     template<typename F,typename  V>
-    static optional<T> func(F&& f,V&& v) {return f(v);}
+    static optional<T> func(F f,V&& v) {return f(v);}
 
     template<typename V>
     static T value(V&& v) {return v;}
