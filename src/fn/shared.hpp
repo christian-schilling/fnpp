@@ -52,6 +52,7 @@ struct chained
         return c;
     }
 
+private:
     chained* prev;
     chained* next;
 };
@@ -99,7 +100,7 @@ private:
 };
 
 template<typename T>
-struct ref : public fn_::chained, public optional<T&>
+struct ref : private fn_::chained, public optional<T&>
 {
     ref() {}
     ref(shared<T>& o): optional<T&>(o.value)
