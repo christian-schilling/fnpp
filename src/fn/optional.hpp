@@ -216,7 +216,7 @@ public:
 }
 
 template<typename T>
-class optional final : public fn_::optional_value<T>
+class optional : public fn_::optional_value<T>
 {
     using fn_::optional_value<T>::value_mem;
 
@@ -331,7 +331,7 @@ public:
 };
 
 template<typename T>
-class optional<T const> final : public fn_::optional_value<T const>
+class optional<T const> : public fn_::optional_value<T const>
 {
     using fn_::optional_value<T const>::value_mem;
 
@@ -384,7 +384,7 @@ public:
 };
 
 template<typename T>
-class optional<T&> final : public fn_::optional_ref<T>
+class optional<T&> : public fn_::optional_ref<T>
 {
     friend class optional<T const&>;
     friend class optional<T const>;
@@ -405,7 +405,7 @@ public:
 };
 
 template<typename T>
-class optional<T const&> final : public fn_::optional_ref<T const>
+class optional<T const&> : public fn_::optional_ref<T const>
 {
     friend class optional<T const>;
     friend class optional<T>;
@@ -429,7 +429,7 @@ public:
 };
 
 template<>
-class optional<void> final
+class optional<void>
 {
     bool no_value;
 public:
@@ -490,5 +490,22 @@ struct return_cast<optional<T>> {
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
+
+/*
+ * Some macros to make optional<T> usable with complex types.
+ * As soon as generic lambdas can be used (C++14), these won't be
+ * necessary anymore, and should not be used from that point onwards.
+ */
+#ifndef _MSC_VER
+#define FN_TYPENAME typename
+#else
+#define FN_TYPENAME
+#endif
+
+#define FN_OTYPE(X) FN_TYPENAME fn::fn_::remove_reference<decltype(X)>::T::Type
+#define use_(X) X >>[&](FN_OTYPE(X)&
+#define _as(X) X)
+#define with_(X) use_(X)_as(X)
+
 
 #endif

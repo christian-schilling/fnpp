@@ -9,22 +9,7 @@
 #include "fn/pick.hpp"
 #include "fn/express.hpp"
 #include "fn/slice.hpp"
-
-/*
- * Some macros to make optional<T> usable with complex types.
- * As soon as generic lambdas can be used (C++14), these won't be
- * necessary anymore, and should not be used from that point onwards.
- */
-#ifndef _MSC_VER
-#define FN_TYPENAME typename
-#else
-#define FN_TYPENAME
-#endif
-
-#define FN_OTYPE(X) FN_TYPENAME fn::fn_::remove_reference<decltype(X)>::T::Type
-#define use_(X) X >>[&](FN_OTYPE(X)&
-#define _as(X) X)
-#define with_(X) use_(X)_as(X)
+#include "fn/shared.hpp"
 
 
 #endif

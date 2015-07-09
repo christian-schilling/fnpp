@@ -1,6 +1,9 @@
 #ifndef _83c9a570_2b4b_481b_a810_85d3b5f3fe91
 #define _83c9a570_2b4b_481b_a810_85d3b5f3fe91
 
+#include "optional.hpp"
+#include "iterators.hpp"
+
 namespace fn{
 
 template<typename slice>

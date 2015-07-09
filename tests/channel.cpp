@@ -5,7 +5,7 @@
 #include <thread>
 #include "catch.hpp"
 
-#include <fn++.hpp>
+#include <fn/iterators.hpp>
 #include <fn/channel.hpp>
 using namespace fn;
 

@@ -1,5 +1,6 @@
 #include <cstdio>
-#include <fn++.hpp>
+#include <fn/synchronized.hpp>
+#include <fn/optional.hpp>
 #include <vector>
 #include <map>
 #include <utility>

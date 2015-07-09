@@ -1,5 +1,5 @@
 #include <cstdio>
-#include <fn++.hpp>
+#include <fn/slice.hpp>
 #include <vector>
 #include <map>
 #include <utility>

@@ -1,5 +1,7 @@
 #include <cstdio>
-#include <fn++.hpp>
+#include <fn/optional.hpp>
+#include <fn/iterators.hpp>
+#include <fn/element.hpp>
 #include <vector>
 #include <map>
 #include <utility>
