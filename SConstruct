@@ -11,7 +11,7 @@ env.Append(
         "./src",
     ],
     CCFLAGS=[
-        '-Ofast',
+        '-O3',
         '-std=c++11',
         '-Wall',
         '-Wextra',
