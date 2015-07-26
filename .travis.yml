@@ -3,7 +3,6 @@ sudo: false
 language: cpp
 compiler:
   - gcc
-  - clang
 install:
 - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
 addons:
@@ -13,4 +12,3 @@ addons:
     packages:
     - gcc-4.9
     - g++-4.9
-    - clang-3.7
