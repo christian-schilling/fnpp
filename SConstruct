@@ -4,6 +4,8 @@ env = Environment()
 import os
 env['ENV']['TERM'] = os.environ['TERM']
 
+env["CXX"] = os.environ.get("CXX","g++")
+
 env.Append(
     CPPPATH=[
         "./src",
