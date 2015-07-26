@@ -15,7 +15,7 @@ A header that provides some helpers to enhance functional style programming in C
 * element(...).of(...) / element(...).in(...): range checked access to
   containers, returning optional<T> objects.
 * Zero dependencies
-* Tested with gcc 4.8, clang 3.4 and msvc++ 2013
+* Tested with gcc 4.9, clang 3.4 and msvc++ 2013
 
 ##Usage
 
