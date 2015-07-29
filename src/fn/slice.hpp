@@ -1,17 +1,21 @@
 #ifndef _83c9a570_2b4b_481b_a810_85d3b5f3fe91
 #define _83c9a570_2b4b_481b_a810_85d3b5f3fe91
 
-#include "optional.hpp"
 #include "iterators.hpp"
+#include "optional.hpp"
+
+namespace std{ template<typename T, size_t S> class array; }
 
 namespace fn{
 
-template<typename slice>
+template<typename slice, typename T>
 class slice_IT
 {
     slice& s;
     size_t position;
 public:
+
+    using value_type = T;
 
     slice_IT(slice& s, size_t position): s(s), position(position) {}
 
@@ -26,7 +30,7 @@ public:
         return *this;
     }
 
-    typename slice::value_type& operator*()
+    T& operator*()
     {
         return s._data[position];
     }
@@ -44,7 +48,8 @@ private:
     template<typename O_T, size_t O_S>
     friend class slice;
 
-    friend class slice_IT<slice>;
+    friend class slice_IT<slice,T>;
+    friend class slice_IT<slice const,T>;
 
     explicit slice(T* const d,int):
         _data(d)
@@ -56,7 +61,17 @@ public:
     slice(T(&d)[OS]):
         slice(d,0)
     {
-        static_assert(S <= OS,"fn::slice: source array to small");
+        static_assert(S <= OS, "fn::slice: source array to small");
+    }
+
+    template<typename OT, size_t OS>
+    slice(std::array<OT,OS>& array):
+        slice(array.data(),0)
+    {
+        static_assert(
+            sizeof(T) == sizeof(OT) && S <= OS,
+            "fn::slice: source std::array to small"
+        );
     }
 
     static slice from_pointer(T* const d)
@@ -64,8 +79,8 @@ public:
         return slice(d,0);
     }
 
-    template<typename O_T, size_t O_S>
-    slice(slice<O_T,O_S>& other):
+    template<size_t O_S>
+    slice(slice<T,O_S> const& other):
         slice(other._data,0)
     {
         static_assert(S <= O_S,"fn::slice: target to small");
@@ -90,13 +105,6 @@ public:
     }
 
     template<size_t I>
-    T& at()
-    {
-        static_assert(I < S,"fn::slice: index out of bounds");
-        return _data[I];
-    }
-
-    template<size_t I>
     T const& at() const
     {
         static_assert(I < S,"fn::slice: index out of bounds");
@@ -109,7 +117,7 @@ public:
         return S;
     }
 
-    optional<T&> operator[](size_t const i)
+    optional<T&> operator[](size_t const i) const
     {
         if(i<S){
             return _data[i];
@@ -119,27 +127,17 @@ public:
         }
     }
 
-    optional<T const&> operator[](size_t const i) const
-    {
-        if(i<S){
-            return _data[i];
-        }
-        else{
-            return {};
-        }
-    }
-
-    slice_IT<slice> begin()
+    slice_IT<slice const,T> begin() const
     {
         return {*this,0};
     }
 
-    slice_IT<slice> end()
+    slice_IT<slice const,T> end() const
     {
         return {*this,size()};
     }
 
-    slice& fill(T const& v)
+    slice const& fill(T const& v) const
     {
         for(auto& x: *this){
             x = v;
@@ -147,16 +145,15 @@ public:
         return *this;
     }
 
-    slice& copy(slice const& o)
+    void copy(slice const& o) const
     {
         for(auto&& i: range(S)){
             _data[i] = o._data[i];
         }
-        return *this;
     }
 
     template<typename RT, size_t C=0>
-    auto reinterpret_as()
+    auto reinterpret_as() const
         -> decltype(slice<RT,(C==0) ? (S*sizeof(T))/sizeof(RT) : C>::from_pointer(
             reinterpret_cast<RT*>(_data)
         ))
@@ -183,23 +180,42 @@ public:
 private:
     size_t _size;
     T* _data;
-    friend class slice_IT<slice>;
+    friend class slice_IT<slice,T>;
+    friend class slice_IT<slice const,T>;
+    friend class slice<T const,0>;
 
 public:
+    slice(): slice(nullptr,0)
+    {}
+
     slice(T* const _data, size_t const _size):
         _size(_size),
         _data(_data)
     {}
 
     template<typename O_T>
-    slice(slice<O_T,0>& s):
+    slice(slice<O_T,0> const& s):
         slice(s._data,s.size())
     {}
 
-    template<typename O_T, size_t O_S>
-    slice(slice<O_T,O_S>& s):
+    template<size_t O_S>
+    slice(slice<T,O_S> const& s):
         slice(s._data,s.size())
     {}
+
+    template<size_t O_S>
+    slice(slice<T,O_S>& s):
+        slice(s._data,s.size())
+    {}
+
+    slice(slice const& o):
+        slice(o._data,o.size())
+    {}
+
+    operator slice<T const>()
+    {
+        return slice<T const>(_data,_size);
+    }
 
     template<typename V>
     slice(V& v):
@@ -213,17 +229,7 @@ public:
         return *this;
     }
 
-    optional<T&> operator[](size_t const i)
-    {
-        if(i<_size){
-            return _data[i];
-        }
-        else{
-            return {};
-        }
-    }
-
-    optional<T const&> operator[](size_t const i) const
+    optional<T&> operator[](size_t const i) const
     {
         if(i<_size){
             return _data[i];
@@ -235,18 +241,17 @@ public:
 
     size_t size() const { return _size; }
 
-
-    slice_IT<slice> begin()
+    slice_IT<slice const,T> begin() const
     {
         return {*this,0};
     }
 
-    slice_IT<slice> end()
+    slice_IT<slice const,T> end() const
     {
         return {*this,size()};
     }
 
-    slice& fill(T const& v)
+    slice const& fill(T const& v) const
     {
         for(auto&& x: *this){
             x = v;
@@ -254,12 +259,39 @@ public:
         return *this;
     }
 
-    slice& copy(slice const& o)
+    /*
+     * Copies the data from source into this.
+     * Returns the part of source that was not copied.
+     */
+    slice<T const> copy(slice<T const> const source) const
     {
-        for(auto&& i: range(size() < o.size() ? size() : o.size())){
-            _data[i] = o._data[i];
+        size_t n = 0;
+        auto s = source.begin();
+        for(auto&& d: *this){
+            if(!(s != source.end())){ break; }
+            d = *s;
+            ++s;
+            ++n;
         }
-        return *this;
+        return source.offset(n);
+    }
+
+    bool operator==(slice const o) const
+    {
+        return _data == o._data && _size == o._size;
+    }
+
+    bool compare(slice const o) const
+    {
+        if(size() != o.size()){
+            return false;
+        }
+        for(auto&& v: zip(*this,o)){
+            if(!(v.first == v.second)){
+                return false;
+            }
+        }
+        return true;
     }
 
     auto offset(size_t o) const -> slice<T,0>
@@ -278,7 +310,7 @@ public:
         }
     }
 
-    slice subslice(size_t const s)
+    slice subslice(size_t const s) const
     {
         if(s > size()){
             return slice(nullptr,0);
@@ -289,7 +321,7 @@ public:
     }
 
     template<typename RT>
-    auto reinterpret_as(size_t const c=0) -> slice<RT>
+    auto reinterpret_as(size_t const c=0) const -> slice<RT>
     {
         auto const new_size = ((c==0) ? (size()*sizeof(T))/sizeof(RT) : c);
         return slice<RT>(

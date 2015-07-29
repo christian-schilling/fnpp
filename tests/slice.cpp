@@ -138,7 +138,9 @@ TEST_CASE("slice")
         auto s0 = slice<uint8_t>(buf0,5);
         auto s1 = slice<uint8_t>(buf1,5);
 
-        s0.copy(s1);
+        auto const rest = s0.copy(s1);
+
+        CHECK(rest.size() == 0);
 
         REQUIRE(9 == buf0[0]);
         REQUIRE(8 == buf0[1]);
@@ -155,14 +157,34 @@ TEST_CASE("slice")
         auto s0 = slice<uint8_t>(buf0,5);
         auto s1 = slice<uint8_t>(buf1,3);
 
-        s0.copy(s1);
+        SECTION("src < dst")
+        {
+            auto const rest = s0.copy(s1);
+            CHECK(rest.size() == 0);
 
-        REQUIRE(9 == buf0[0]);
-        REQUIRE(8 == buf0[1]);
-        REQUIRE(7 == buf0[2]);
-        REQUIRE(3 == buf0[3]);
-        REQUIRE(4 == buf0[4]);
-        REQUIRE(5 == buf0[5]);
+            REQUIRE(9 == buf0[0]);
+            REQUIRE(8 == buf0[1]);
+            REQUIRE(7 == buf0[2]);
+            REQUIRE(3 == buf0[3]);
+            REQUIRE(4 == buf0[4]);
+            REQUIRE(5 == buf0[5]);
+        }
+
+        SECTION("dst < src")
+        {
+            auto const rest = s1.copy(s0);
+            CHECK(rest.size() == 2);
+
+            REQUIRE(3 == ~rest[0]);
+            REQUIRE(4 == ~rest[1]);
+
+            REQUIRE(0 == buf1[0]);
+            REQUIRE(1 == buf1[1]);
+            REQUIRE(2 == buf1[2]);
+            REQUIRE(6 == buf1[3]);
+            REQUIRE(5 == buf1[4]);
+            REQUIRE(4 == buf1[5]);
+        }
     }
 
     SECTION("dynamic_to_fixed")
