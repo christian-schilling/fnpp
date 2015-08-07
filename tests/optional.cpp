@@ -206,6 +206,17 @@ TEST_CASE("An optional value")
             REQUIRE(3 == i);
         };
     }
+    SECTION("supports handlers returning references")
+    {
+        optional<int> i = 4;
+
+        optional<int&> x = i >>[](int& v)-> int& { return v; };
+
+        x >>[](int& y){ y = 8; };
+
+        CHECK(8 == ~x);
+        CHECK(8 == ~i);
+    }
 
     SECTION("supports handler chaining")
     {

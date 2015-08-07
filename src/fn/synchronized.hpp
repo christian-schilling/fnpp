@@ -2,10 +2,91 @@
 #define _33128b50_cfb2_4f58_aa60_82c8585f832e
 
 #include "common.hpp"
+#include "optional.hpp"
+
+namespace std { class mutex; }
 
 namespace fn {
 
+template<typename Mutex>
+void lock(Mutex& m) { m.lock(); }
+
+template<typename Mutex>
+void unlock(Mutex& m) { m.unlock(); }
+
+template<typename T, typename Mutex> class guard;
+
+template<typename T1, typename T2, typename Mutex>
+auto guard_cast(guard<T1,Mutex> o, optional<T2> v)
+    ->guard<T2,Mutex>
+{
+    return guard<T2,Mutex>(fn_::move(o.mutex),fn_::move(v));
+}
+
 template<typename T, typename Mutex>
+class guard
+{
+    optional<Mutex&> mutex;
+    optional<T> value;
+public:
+    guard(Mutex& mutex_, T value_):
+        mutex(mutex_),
+        value(value_)
+    {
+        mutex >> lock<Mutex>;
+    }
+
+    guard(guard const&) = delete;
+
+    guard(guard&& o)
+    {
+        value = o.value;
+        mutex = o.mutex;
+        o.value = {};
+        o.mutex = {};
+    }
+
+    /* template<typename T1> */
+    /* friend class guard; */
+
+    template<typename T1, typename T2, typename M>
+    /* friend guard<T2,Mutex> guard_cast() */
+    friend auto guard_cast(guard<T1,M> o, optional<T2> v)
+        ->guard<T2,M>;
+
+    guard(optional<Mutex&>&& m, optional<T>&& v)
+    {
+        value = fn_::move(v);
+        mutex = fn_::move(m);
+        v = {};
+        m = {};
+    }
+
+    template<typename F>
+    auto operator>>(F f)
+        -> decltype(guard_cast(fn_::move(*this),value >> f))
+    //decltype(guard_cast(*this,value >> f))
+    {
+        auto r = guard_cast(fn_::move(*this),value >> f);
+        mutex = {};
+        value = {};
+        return r;
+        /* return value >> f; */
+        /* return guard_cast(*this,value >> f); */
+    }
+
+    /* template<typename F> */
+    /* auto operator>>(F f) const -> guard<decltype(f(value)),Mutex> */
+    /* { */
+    /*     return guard<decltype(f(value)),Mutex>(value >> f); */
+    /* } */
+
+    ~guard() { mutex >> unlock<Mutex>; }
+    /* optional<T&> operator*() { return value; } */
+};
+
+
+template<typename T, typename Mutex=std::mutex>
 class synchronized final
 {
     Mutex mutable mutex;
@@ -17,19 +98,15 @@ public:
     synchronized(Args... args): value(args...) {}
 
     template<typename F>
-    void operator>>(F const& f)
+    auto operator>>(F f) -> decltype(fn::guard<T&,Mutex>(mutex,value) >> f)
     {
-        mutex.lock();
-        f(value);
-        mutex.unlock();
+        return fn::guard<T&,Mutex>(mutex,value) >> f;
     }
 
     template<typename F>
-    void operator>>(F const& f) const
+    auto operator>>(F f) const -> decltype(fn::guard<T const&,Mutex>(mutex,value) >> f)
     {
-        mutex.lock();
-        f(value);
-        mutex.unlock();
+        return fn::guard<T const&,Mutex>(mutex,value) >> f;
     }
 
     T take()
@@ -48,49 +125,16 @@ public:
         return fn_::move(t);
     }
 
-    class synchronized_guard
-    {
-        Mutex& mutex;
-        T& value;
-    public:
-        synchronized_guard(Mutex& mutex, T& value):
-            mutex(mutex),
-            value(value)
-        {
-            mutex.lock();
-        }
 
-        ~synchronized_guard() { mutex.unlock(); }
-        T& operator*() { return value; }
-        T* operator->() { return &value; }
-    };
+    /* fn::guard<T,Mutex> guard() */
+    /* { */
+    /*     return fn::guard<T,Mutex>(mutex,value); */
+    /* } */
 
-    class synchronized_guard_const
-    {
-        Mutex& mutex;
-        T const& value;
-    public:
-        synchronized_guard_const(Mutex& mutex, T const& value):
-            mutex(mutex),
-            value(value)
-        {
-            mutex.lock();
-        }
-
-        ~synchronized_guard_const() { mutex.unlock(); }
-        T const& operator*() const { return value; }
-        T const* operator->() const { return &value; }
-    };
-
-    synchronized_guard guard()
-    {
-        return synchronized_guard(mutex,value);
-    }
-
-    synchronized_guard_const guard() const
-    {
-        return synchronized_guard_const(mutex,value);
-    }
+    /* fn::guard<T const,Mutex> guard() const */
+    /* { */
+    /*     return fn::guard<T const,Mutex>(mutex,value); */
+    /* } */
 };
 
 };
