@@ -37,21 +37,21 @@ struct Rule
 struct DefaultTo {};
 
 template<typename P, typename Value>
-auto pick_helper(P const& p, Rule<DefaultTo,Value> rule)
+auto match_helper(P const& p, Rule<DefaultTo,Value> rule)
     -> decltype(InvokeHelper<Value>::inv(rule.value,p.var))
 {
     return InvokeHelper<Value>::inv(rule.value,p.var);
 }
 
 template<typename P, typename Predicate, typename Value, typename ...Args>
-auto pick_helper(P const& p, Rule<Predicate,Value> rule, Args... args)
+auto match_helper(P const& p, Rule<Predicate,Value> rule, Args... args)
     -> decltype(InvokeHelper<Value>::inv(rule.value,p.var))
 {
     if(rule.predicate(p.var)){
         return InvokeHelper<Value>::inv(rule.value,p.var);
     }
     else{
-        return pick_helper(p,args...);
+        return match_helper(p,args...);
     }
 }
 
@@ -64,7 +64,7 @@ struct Pick
 	auto operator()(Rule<Predicate, Value> rule, Args... args) const
         -> decltype(InvokeHelper<Value>::inv(rule.value,var))
     {
-        return pick_helper(*this,rule,args...);
+        return match_helper(*this,rule,args...);
     }
 };
 
@@ -101,7 +101,7 @@ auto operator >>=(When<Predicate> const when, ENode<L,R,Op> const then)
 } // namespace fn_
 
 template<typename Var>
-auto pick(Var var) -> fn_::Pick<Var> const { return fn_::Pick<Var>{var}; }
+auto match(Var var) -> fn_::Pick<Var> const { return fn_::Pick<Var>{var}; }
 
 template<typename Predicate>
 auto when(Predicate p) -> fn_::When<Predicate> const { return fn_::When<Predicate>{p}; }

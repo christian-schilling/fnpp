@@ -1,5 +1,5 @@
 #include <cstdio>
-#include <fn/pick.hpp>
+#include <fn/match.hpp>
 #include <fn/express.hpp>
 #include <vector>
 #include <map>
@@ -9,17 +9,17 @@ using namespace fn;
 
 auto const smallest_perfect_number = when(_ == 6);
 
-auto const judge = [](int x){ return pick(x)(
+auto const judge = [](int x){ return match(x)(
     when(_ == 3)            >>= "half perfect",
     smallest_perfect_number >>= "perfect",
     default_to              >>= "not perfect"
 );};
 
 
-TEST_CASE("pick")
+TEST_CASE("match")
 {
     {
-        auto const t = pick(3)(
+        auto const t = match(3)(
             when(_ == 3) >>= 5,
             when(6 == _) >>= 9,
             default_to >>= 0
@@ -28,7 +28,7 @@ TEST_CASE("pick")
     }
 
     {
-        auto const t = pick(3)(
+        auto const t = match(3)(
             when(_ == 1) >>= 8,
             when(_ == 3) >>= 5,
             when(_ == 3) >>= 6,
@@ -47,7 +47,7 @@ TEST_CASE("pick")
 
     {
         auto x = 8;
-        auto const t = pick(7)(
+        auto const t = match(7)(
             when(_ == 7) >>[&](int i) { return x*i; },
             when(_ == 3) >>= 5,
             when(_ == 6) >>= 9,
@@ -57,7 +57,7 @@ TEST_CASE("pick")
     }
 
     {
-        auto const t = pick(12)(
+        auto const t = match(12)(
             when(_ == 3) >>= 5,
             when(_ == 6) >>= 9,
             default_to >>[](int i) { return i*3; }
@@ -66,7 +66,7 @@ TEST_CASE("pick")
     }
 
     {
-        auto const t = pick(7)(
+        auto const t = match(7)(
             when(_ == 3) >>= 5,
             when(_ == 6) >>= 9,
             default_to >>[](int i){
@@ -78,7 +78,7 @@ TEST_CASE("pick")
     }
 
     {
-        auto const f = [](int x){return pick(x)(
+        auto const f = [](int x){return match(x)(
             when(_ > 3 && _ < 7) >>= (_*2),
             default_to >>= 0
         );};

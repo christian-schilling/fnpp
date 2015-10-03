@@ -6,7 +6,7 @@
 #include "fn/optional.hpp"
 #include "fn/synchronized.hpp"
 #include "fn/element.hpp"
-#include "fn/pick.hpp"
+#include "fn/match.hpp"
 #include "fn/express.hpp"
 #include "fn/slice.hpp"
 #include "fn/shared.hpp"
