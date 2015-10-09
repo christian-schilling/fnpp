@@ -56,7 +56,7 @@ auto match_helper(P const& p, Rule<Predicate,Value> rule, Args... args)
 }
 
 template<typename Var>
-struct Pick
+struct Match
 {
     Var const var;
 
@@ -101,7 +101,7 @@ auto operator >>=(When<Predicate> const when, ENode<L,R,Op> const then)
 } // namespace fn_
 
 template<typename Var>
-auto match(Var var) -> fn_::Pick<Var> const { return fn_::Pick<Var>{var}; }
+auto match(Var var) -> fn_::Match<Var> const { return fn_::Match<Var>{var}; }
 
 template<typename Predicate>
 auto when(Predicate p) -> fn_::When<Predicate> const { return fn_::When<Predicate>{p}; }
