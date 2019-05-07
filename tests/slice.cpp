@@ -42,6 +42,19 @@ TEST_CASE("slice")
         REQUIRE(4 == s4_d.size());
     }
 
+    SECTION("dynamic_last")
+    {
+        uint8_t buf[6] = {0,1,2,3,4,100};
+        auto s5 = slice<uint8_t>(buf,5);
+        auto s4_d = s5.last(4);
+
+        REQUIRE(s4_d[3].valid());
+        REQUIRE_FALSE(s4_d[4].valid());
+        REQUIRE(4 == ~s4_d[3]);
+        REQUIRE(0 == ~s4_d[4]);
+        REQUIRE(4 == s4_d.size());
+    }
+
     SECTION("sizes_and_contents")
     {
         uint8_t buf[6] = {0,1,2,3,4,100};

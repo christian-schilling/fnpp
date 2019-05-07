@@ -299,6 +299,12 @@ public:
         return slice<T,0>(_data + o,(o<size()) ? size()-o : 0);
     }
 
+    auto last(size_t o) const -> slice<T,0>
+    {
+        return subslice(size() - o);
+    }
+
+
     template<size_t S>
     auto first() -> optional<slice<T,S>>
     {
