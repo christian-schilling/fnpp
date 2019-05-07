@@ -91,6 +91,29 @@ TEST_CASE("multi_slice, advance_sets_size_to_zero_if_size_is_to_big")
     REQUIRE(0U == u8u16.size());
 }
 
+TEST_CASE("multi_slice, subslice_reduces_size")
+{
+    MS816 u8u16 = MS816(u8_array, u16_array);
+    u8u16 = u8u16.subslice(6);
+    REQUIRE(4U == u8u16.size());
+}
+
+TEST_CASE("multi_slice, subslice_adjusts_data_pointers")
+{
+    MS816 u8u16 = MS816(u8_array, u16_array);
+    u8u16 = u8u16.subslice(6);
+    REQUIRE((u8_array.data() + 6U) == u8u16.get<uint8_t>().data());
+    REQUIRE((u16_array.data() + 6U) == u8u16.get<const uint16_t>().data());
+}
+
+TEST_CASE("multi_slice, subslice_sets_size_to_zero_if_size_is_to_big")
+{
+    MS816 u8u16 = MS816(u8_array, u16_array);
+    u8u16 = u8u16.subslice(11);
+    REQUIRE(0U == u8u16.size());
+}
+
+
 TEST_CASE("multi_slice, can_be_converted_to_a_subset_multi_slice")
 {
     std::array<uint8_t, 10> a8;
@@ -149,11 +172,11 @@ TEST_CASE("multi_slice, all_the_overloads_want_to_be_covered")
     multi_slice<V<0>, V<1>, V<2>, V<3>, V<4>, V<5>, V<6> > s7(v0, v1, v2, v3, v4, v5, v6);
     multi_slice<V<0>, V<1>, V<2>, V<3>, V<4>, V<5>, V<6>, V<7> > s8(v0, v1, v2, v3, v4, v5, v6, v7);
 
-    REQUIRE(0U == s2.advance(11).size());
-    REQUIRE(0U == s3.advance(11).size());
-    REQUIRE(0U == s4.advance(11).size());
-    REQUIRE(0U == s5.advance(11).size());
-    REQUIRE(0U == s6.advance(11).size());
-    REQUIRE(0U == s7.advance(11).size());
+    REQUIRE(0U == s2.subslice(11).size());
+    REQUIRE(0U == s3.subslice(11).size());
+    REQUIRE(0U == s4.subslice(11).size());
+    REQUIRE(0U == s5.subslice(11).size());
+    REQUIRE(0U == s6.subslice(11).size());
+    REQUIRE(0U == s7.subslice(11).size());
 }
 

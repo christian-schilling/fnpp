@@ -286,6 +286,25 @@ public:
         // clang-format on
         return *this;
     }
+
+    multi_slice subslice(size_t offset) const
+    {
+        multi_slice tmp(*this);
+        return tmp.advance(offset);
+    }
+
+    multi_slice first(size_t limit) const
+    {
+        multi_slice tmp(*this);
+        return tmp.trim(limit);
+    }
+
+    multi_slice last(size_t count) const
+    {
+        multi_slice tmp(*this);
+        return tmp.advance(size() - count);
+    }
+
 };
 
 } // namespace fn
