@@ -92,13 +92,13 @@ public:
     }
 
     template<size_t O>
-    auto offset() const -> slice<T,S-O>
+    auto subslice() const -> slice<T,S-O>
     {
         static_assert(O < S,"fn::slice: offset to large");
         return slice<T,S-O>(_data + O,0);
     }
 
-    auto offset(size_t o) const -> slice<T,0>
+    auto subslice(size_t o) const -> slice<T,0>
     {
         return slice<T,0>(_data + o,(o<size()) ? size()-o : 0);
     }
@@ -273,7 +273,7 @@ public:
             ++s;
             ++n;
         }
-        return source.offset(n);
+        return source.subslice(n);
     }
 
     bool operator==(slice const o) const
@@ -294,13 +294,13 @@ public:
         return true;
     }
 
-    auto offset(size_t o) const -> slice<T,0>
+    auto subslice(size_t o) const -> slice<T,0>
     {
         return slice<T,0>(_data + o,(o<size()) ? size()-o : 0);
     }
 
     template<size_t S>
-    auto subslice() -> optional<slice<T,S>>
+    auto first() -> optional<slice<T,S>>
     {
         if(S > size()){
             return {};
@@ -310,7 +310,7 @@ public:
         }
     }
 
-    slice subslice(size_t const s) const
+    slice first(size_t const s) const
     {
         if(s > size()){
             return slice(nullptr,0);

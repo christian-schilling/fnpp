@@ -13,8 +13,8 @@ TEST_CASE("slice")
     {
         uint8_t buf[6] = {0,1,2,3,4,100};
         auto s5 = slice<uint8_t,5>::from_pointer(buf);
-        auto s4 = slice<uint8_t,4>(s5.offset<1>());
-        auto s4_d = s5.offset(1);
+        auto s4 = slice<uint8_t,4>(s5.subslice<1>());
+        auto s4_d = s5.subslice(1);
         REQUIRE(s4[3].valid());
         REQUIRE_FALSE(s4[4].valid());
         REQUIRE(4 == ~s4[3]);
@@ -33,7 +33,7 @@ TEST_CASE("slice")
     {
         uint8_t buf[6] = {0,1,2,3,4,100};
         auto s5 = slice<uint8_t>(buf,5);
-        auto s4_d = s5.offset(1);
+        auto s4_d = s5.subslice(1);
 
         REQUIRE(s4_d[3].valid());
         REQUIRE_FALSE(s4_d[4].valid());
@@ -88,7 +88,7 @@ TEST_CASE("slice")
     {
         uint8_t buf[6] = {0,1,2,3,4,100};
         auto s5 = slice<uint8_t,5>::from_pointer(buf);
-        auto s4 = slice<uint8_t,4>(s5.offset<1>());
+        auto s4 = slice<uint8_t,4>(s5.subslice<1>());
         s4.fill(11);
 
         REQUIRE(11 == ~s5[3]);
@@ -193,28 +193,28 @@ TEST_CASE("slice")
         auto ds = slice<uint8_t>(buf,5);
 
         {
-            auto fs = ds.subslice<4>();
+            auto fs = ds.first<4>();
             REQUIRE(fs.valid());
         }
 
         {
-            auto fs = ds.subslice<10>();
+            auto fs = ds.first<10>();
             REQUIRE_FALSE(fs.valid());
         }
     }
 
-    SECTION("dynamic_subslice")
+    SECTION("dynamic_first")
     {
         uint8_t buf[6] = {0,1,2,3,4,100};
         auto ds = slice<uint8_t>(buf,5);
 
         {
-            auto fs = ds.subslice(4);
+            auto fs = ds.first(4);
             REQUIRE(4 == fs.size());
         }
 
         {
-            auto fs = ds.subslice(10);
+            auto fs = ds.first(10);
             REQUIRE(0 == fs.size());
         }
     }
