@@ -85,7 +85,7 @@ struct shared
 
     ~shared()
     {
-        refs >>[this](ref<T>& refs) {
+        refs >>[](ref<T>& refs) {
             refs.invalidate();
         };
     }

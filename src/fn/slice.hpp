@@ -1,10 +1,9 @@
 #ifndef _83c9a570_2b4b_481b_a810_85d3b5f3fe91
 #define _83c9a570_2b4b_481b_a810_85d3b5f3fe91
 
+#include <array>
 #include "iterators.hpp"
 #include "optional.hpp"
-
-namespace std{ template<typename T, size_t S> class array; }
 
 namespace fn{
 
@@ -240,6 +239,7 @@ public:
     }
 
     size_t size() const { return _size; }
+    T* data() const { return _data; }
 
     slice_IT<slice const,T> begin() const
     {
@@ -345,6 +345,13 @@ auto slice_from_pointer(V* v)
     return slice<V,S>::from_pointer(v);
 }
 
+
+template<>
+class slice<void, 0> {
+public:
+    size_t size() const { return 0U; }
+    void* data() const { return 0L; }
+};
 
 
 
